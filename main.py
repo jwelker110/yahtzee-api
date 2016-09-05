@@ -15,13 +15,10 @@
 # limitations under the License.
 #
 import webapp2
-import os
 
 from endpoints.credentials import CredentialsEP
 from endpoints.user import UserEP
 
-
-os.environ['JWT_KEY'] = os.urandom(64).encode('base-64')
 
 app = webapp2.WSGIApplication([
     ('/creds', CredentialsEP),
