@@ -24,7 +24,7 @@ class UserEP(request.RequestHandler):
         data = json.loads(self.request.body)
 
         # we are using this application to make the request on behalf of the user
-        client_id = '11589825117-sa1m73o6t85ti2fvn51a0f7f6kbjt6dd.apps.googleusercontent.com'
+        client_id = os.environ.get('CLIENT_ID')
         client_secret = os.environ.get('CLIENT_SECRET')
         # code associated with the user so we can verify their identity
         auth_code = data.get('authCode')
@@ -56,7 +56,6 @@ class UserEP(request.RequestHandler):
             # were we given the wrong user info?
             return self.error(400)
 
-        print userinfo
         # ok now create the user and jwt and pass it back!
         email = userinfo.get('email')
 
@@ -87,5 +86,5 @@ class UserEP(request.RequestHandler):
         payload = {
             "userKey": user.key.urlsafe()
         }
-        jwt = token.encode_jwt(payload, os.environ.get('JWT_KEY'))
+        jwt = token.encode_jwt(payload)
         return self.response.write(jwt)

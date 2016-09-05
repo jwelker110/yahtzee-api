@@ -1,8 +1,9 @@
+import os
 import jwt
 import datetime
 
 
-def encode_jwt(payload, key, algorithms='HS256', headers=None, json_encoder=None):
+def encode_jwt(payload, key=None, algorithms='HS256', headers=None, json_encoder=None):
     """
     Encode the provided payload, using the specified settings
     :param payload: the dict to encode
@@ -12,6 +13,9 @@ def encode_jwt(payload, key, algorithms='HS256', headers=None, json_encoder=None
     :param json_encoder: the encoder to on the payload
     :return: the JWT containing the payload or None if it failed to encode
     """
+    if key is None:
+        key = os.environ.get('JWT_SECRET')
+
     now = datetime.datetime.now()
     payload['exp'] = now + datetime.timedelta(days=3)
     payload['iat'] = now
@@ -24,7 +28,7 @@ def encode_jwt(payload, key, algorithms='HS256', headers=None, json_encoder=None
     return token
 
 
-def decode_jwt(token, key, verify=True, algorithms='HS256', options=None):
+def decode_jwt(token, key=None, verify=True, algorithms='HS256', options=None):
     """
     Decode the provided token, using the specified settings.
     :param token: the JWT to decode
@@ -34,6 +38,9 @@ def decode_jwt(token, key, verify=True, algorithms='HS256', options=None):
     :param options: dict providing desired checks
     :return: the payload of the token if valid or None if it failed to decode
     """
+    if key is None:
+        key = os.environ.get('JWT_SECRET')
+
     if options is None:
         options = {
                 'verify_signature': True,
