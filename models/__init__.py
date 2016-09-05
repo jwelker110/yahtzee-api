@@ -1,4 +1,3 @@
-from client import Client
 from game import Game
 from roll import Roll
 from scorecard import Scorecard
