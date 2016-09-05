@@ -16,11 +16,9 @@
 #
 import webapp2
 
-from endpoints.credentials import CredentialsEP
 from endpoints.user import UserEP
 
 
 app = webapp2.WSGIApplication([
-    ('/creds', CredentialsEP),
     ('/auth', UserEP)
 ], debug=True, config={'Access-Control-Allow-Origin': '*'})
