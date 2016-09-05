@@ -1,0 +1,5 @@
+.*
+!.gitignore
+*secret*
+lib
+auth/*
