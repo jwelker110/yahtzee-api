@@ -15,7 +15,6 @@ def encode_jwt(payload, key, algorithms='HS256', headers=None, json_encoder=None
     now = datetime.datetime.now()
     payload['exp'] = now + datetime.timedelta(days=3)
     payload['iat'] = now
-    print key
     try:
         token = jwt.encode(payload, key, algorithms, headers, json_encoder)
     except Exception as e:
