@@ -1,13 +1,12 @@
 import httplib2
 import json
 import os
-import string
 
 from google.appengine.ext.ndb import Key
 from apiclient import discovery
 from oauth2client import client
 
-from models import Client, User
+from models import User
 from helpers import request, token
 
 
@@ -21,34 +20,35 @@ class UserEP(request.RequestHandler):
         """
         self.response.headers.add('Access-Control-Allow-Origin', '*')
         self.response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+
         data = json.loads(self.request.body)
-        # credentials key so we know which API to hit
-        cred_key = data.get('credKey')
+
+        # we are using this application to make the request on behalf of the user
+        client_id = '11589825117-sa1m73o6t85ti2fvn51a0f7f6kbjt6dd.apps.googleusercontent.com'
+        client_secret = os.environ.get('CLIENT_SECRET')
         # code associated with the user so we can verify their identity
         auth_code = data.get('authCode')
 
+        if client_secret is None:
+            return self.error(500)
+
+        if auth_code is None:
+            return self.error(400)
+
         # make sure we actually have the keys
-        if cred_key.replace(' ', '') == '' or auth_code.replace(' ', '') == '':
+        if auth_code.replace(' ', '') == '':
             return self.error(400)
-
-        # get the API credentials associated with the app that is
-        # accessing out endpoints
-        creds = Key(urlsafe=cred_key).get()
-
-        if creds is None:
-            return self.error(400)
-
-        # we have the credentials associated with this client so
-        # let's go ahead and verify the user using OAuth
-        credentials = client.credentials_from_code(
-            creds.client_id,
-            creds.client_secret,
-            'email',
-            auth_code
-        )
 
         # verifying the user
         try:
+            # we have the credentials associated with this client so
+            # let's go ahead and verify the user using OAuth
+            credentials = client.credentials_from_code(
+                client_id,
+                client_secret,
+                'email',
+                auth_code
+            )
             http_auth = credentials.authorize(httplib2.Http())
             service = discovery.build('oauth2', 'v2', http=http_auth)
             userinfo = service.userinfo().get().execute()  # we should have the userinfo
@@ -82,6 +82,8 @@ class UserEP(request.RequestHandler):
                 print e.message
                 return self.error(500)
 
+        # create the JWT and send it back to the user. This should
+        # be used on all subsequent requests!
         payload = {
             "userKey": user.key.urlsafe()
         }
