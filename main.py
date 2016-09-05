@@ -15,17 +15,15 @@
 # limitations under the License.
 #
 import webapp2
+import os
 
 from endpoints.credentials import CredentialsEP
 from endpoints.user import UserEP
 
 
-class MainHandler(webapp2.RequestHandler):
-    def get(self):
-        self.response.write('Hello world!')
+os.environ['JWT_KEY'] = os.urandom(64).encode('base-64')
 
 app = webapp2.WSGIApplication([
-    ('/', MainHandler),
     ('/creds', CredentialsEP),
     ('/auth', UserEP)
 ], debug=True, config={'Access-Control-Allow-Origin': '*'})
