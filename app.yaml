@@ -4,6 +4,10 @@ runtime: python27
 api_version: 1
 threadsafe: yes
 
+# goes without saying but change this in prod
+env_variables:
+  JWT_KEY: "The secret, secret key"
+
 handlers:
 - url: /favicon\.ico
   static_files: favicon.ico
