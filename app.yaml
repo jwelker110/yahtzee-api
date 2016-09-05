@@ -7,6 +7,7 @@ threadsafe: yes
 # goes without saying but change this in prod
 env_variables:
   JWT_KEY: "The secret, secret key"
+  CLIENT_SECRET: "T87yJrUBEChqNp8eHI-Qiy73"
 
 handlers:
 - url: /favicon\.ico
