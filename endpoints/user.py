@@ -30,7 +30,7 @@ class UserEP(request.RequestHandler):
         auth_code = data.get('authCode')
 
         if client_secret is None:
-            return self.error(500)
+            return self.response.set_status(500, 'This application has not been configured with proper credentials')
 
         if auth_code is None:
             return self.error(400)
@@ -54,37 +54,42 @@ class UserEP(request.RequestHandler):
             userinfo = service.userinfo().get().execute()  # we should have the userinfo
         except:
             # were we given the wrong user info?
-            return self.error(400)
+            return self.response.set_status(400, 'Unable to authenticate access token. Verify the client ID is correct')
 
         # ok now create the user and jwt and pass it back!
         email = userinfo.get('email')
 
         if email is None:
-            return self.error(400)
+            return self.response.set_status(400, 'Unable to fetch email for this user')
 
         # check whether the user exists
         user = User.get_by_id(email)
 
         if user is None:
             try:
-                token_salt = os.urandom(64).encode('base-64')
                 # create the user
                 username = email.split('@')[0]
                 user = User(
                     username=username,
-                    email=email,
-                    token_salt=token_salt
+                    email=email
                 )
                 user.key = Key('User', email)
                 user.put()
             except Exception as e:
                 print e.message
-                return self.error(500)
+                return self.response.set_status(500, 'An error occurred while attempting to create user')
 
         # create the JWT and send it back to the user. This should
         # be used on all subsequent requests!
         payload = {
-            "userKey": user.key.urlsafe()
+            "userKey": user.key.urlsafe(),
+            "success": True,
+            "msg": "User logged in"
         }
-        jwt = token.encode_jwt(payload)
+
+        try:
+            jwt = token.encode_jwt(payload)
+        except LookupError:
+            return self.response.set_status(500, 'An error occurred while attempting to create credentials')
+
         return self.response.write(jwt)
