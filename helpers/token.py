@@ -30,7 +30,8 @@ def encode_jwt(payload, key=None, algorithms='HS256', headers=None, json_encoder
 
 def decode_jwt(token, key=None, verify=True, algorithms='HS256', options=None):
     """
-    Decode the provided token, using the specified settings.
+    Decode the provided token, using the specified settings. Will raise LookupError if
+    the JWT SECRET has not been set in the environment.
     :param token: the JWT to decode
     :param key: the secret key
     :param verify: bool indicating whether the options should be considered when decoding
@@ -40,6 +41,9 @@ def decode_jwt(token, key=None, verify=True, algorithms='HS256', options=None):
     """
     if key is None:
         key = os.environ.get('JWT_SECRET')
+
+    if key is None:
+        raise LookupError('The JWT secret has not been set! Please set it before continuing')
 
     if options is None:
         options = {
