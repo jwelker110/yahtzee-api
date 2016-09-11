@@ -5,6 +5,7 @@ import string
 from helpers import request, decorators, exceptions
 from models.turn import Turn
 from google.appengine.ext.ndb import Key
+from datetime import datetime
 
 
 class TakeTurnHandler(request.RequestHandler):
@@ -19,14 +20,16 @@ class TakeTurnHandler(request.RequestHandler):
         :return: game key, turncard key, turn key, and the dice (array of dice values)
         """
         data = json.loads(self.request.body)
-        user_key = payload.get('userKey')
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')
         turn_key = data.get('turn_key')
         dice_to_roll = data.get('dice_to_roll')
 
-        if user_key is None:
-            return self.error(400)
+        user = Key(urlsafe=payload.get('userKey'))
+
+        if user is None:
+            # not sure how the JWT slipped through but they aren't authorized to do this
+            return self.error(401)
 
         # get the turncard first, make sure it belongs to this user, then take the turn if possible else return
         # an error
@@ -35,7 +38,7 @@ class TakeTurnHandler(request.RequestHandler):
             if turncard is None:
                 return self.error(400)
 
-            if turncard.owner != user_key:
+            if turncard.owner != user:
                 return self.error(401)
 
             total_turns = len(turncard.turns)
@@ -104,11 +107,13 @@ class NewTurnHandler(request.RequestHandler):
         :return:
         """
         data = json.loads(self.request.body)
-        user_key = payload.get('userKey')
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')
 
-        if user_key is None:
+        user = Key(urlsafe=payload.get('userKey'))
+
+        if user is None:
+            # not sure how the JWT slipped through but they aren't authorized to do this
             return self.error(401)
 
         # we have the user and turncard just verify this is their turncard, verify the latest turn is complete, and
@@ -118,7 +123,7 @@ class NewTurnHandler(request.RequestHandler):
             if turncard is None:
                 return self.error(400)
 
-            if turncard.owner != user_key:
+            if turncard.owner != user:
                 return self.error(401)
 
             total_turns = len(turncard.turns)
@@ -166,22 +171,26 @@ class CompleteTurnHandler(request.RequestHandler):
         :return:
         """
         data = json.loads(self.request.body)
-        user_key = payload.get('userKey')
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')
         allocate_to = data.get('allocate_to')
 
-        if user_key is None:
+        user = Key(urlsafe=payload.get('userKey'))
+
+        if user is None:
+            # not sure how the JWT slipped through but they aren't authorized to do this
             return self.error(401)
 
         turncard = Key(urlsafe=turncard_key).get()
         if turncard is None:
             return self.error(400)
 
-        if turncard.owner != user_key:
+        if turncard.owner != user:
             return self.error(401)
 
         total_turns = len(turncard.turns)
+        if total_turns < 1:
+            return self.response.set_status(400, 'You should begin a turn before trying to complete one')
         # doesn't matter what turn this is, as long as it exists, and it hasn't been allocated, we can try to
         # allocate it to the game
         current_turn = turncard.turns[total_turns - 1]
@@ -196,12 +205,16 @@ class CompleteTurnHandler(request.RequestHandler):
                 # game exists, so let's try to allocate this
                 # todo implement this crazy function to determine where to allocate this
                 # todo also set the game as complete if player one and player two have all their turns completed
-            if game.player_one == user_key:
+            if game.player_one == user:
                 score_player_one(allocate_to, game, current_turn.roll_three)
-            elif game.player_two == user_key:
+            elif game.player_two == user:
                 score_player_two(allocate_to, game, current_turn.roll_three)
+                game.player_two_last_turn_date = datetime.now()
             else:
                 return self.response.set_status(400, 'The user provided is not associated with this game')
+
+            game.put()
+            return self.response.set_status(200)
 
         except exceptions.AlreadyAssignedError as e:
             return self.response.set_status(400, e.message)
@@ -220,12 +233,12 @@ def roll_dice(roll, dice_to_roll):
     return dice_to_save + [random.randint(1, 6) for _ in xrange(0, len(dice_to_roll))]
 
 
-def score_player_one(allocate_to, game, roll):
+def score_player_one(allocate_to, game, current_turn):
     """
     Attempts to allocate the roll to the desired scorecard category for player one
     :param allocate_to: the scorecard category
     :param game: the game with the scores
-    :param roll: the dice that have been rolled for the turn
+    :param current_turn: the dice that have been rolled for the turn
     """
     allocate_to = string.lower(allocate_to)
     exc = exceptions.AlreadyAssignedError('A score has already been assigned to that category')
@@ -235,107 +248,111 @@ def score_player_one(allocate_to, game, roll):
 
     # perform the bonus yahtzee check real quick
     if game.player_one_yahtzee > 0:
-        die = roll[0]
-        if roll == [die, die, die, die, die]:
+        die = current_turn.roll_three[0]
+        if current_turn.roll_three == [die, die, die, die, die]:
             game.player_one_bonus_yahtzee += [100]
             is_bonus_yahtzee = True  # this lets them score it for any box
 
     if 'ones' == allocate_to:
-        if game.player_one_ones > -1:
+        if game.player_one_ones is not None:
             raise exc
-        game.player_one_ones = total_roll(roll, 1)
+        game.player_one_ones = total_roll(current_turn.roll_three, 1)
 
     elif 'twos' == allocate_to:
-        if game.player_one_twos > -1:
+        if game.player_one_twos is not None:
             raise exc
-        game.player_one_twos = total_roll(roll, 2)
+        game.player_one_twos = total_roll(current_turn.roll_three, 2)
 
     elif 'threes' == allocate_to:
-        if game.player_one_threes > -1:
+        if game.player_one_threes is not None:
             raise exc
-        game.player_one_threes = total_roll(roll, 3)
+        game.player_one_threes = total_roll(current_turn.roll_three, 3)
 
     elif 'fours' == allocate_to:
-        if game.player_one_fours > -1:
+        if game.player_one_fours is not None:
             raise exc
-        game.player_one_fours = total_roll(roll, 4)
+        game.player_one_fours = total_roll(current_turn.roll_three, 4)
 
     elif 'fives' == allocate_to:
-        if game.player_one_fives > -1:
+        if game.player_one_fives is not None:
             raise exc
-        game.player_one_fives = total_roll(roll, 5)
+        game.player_one_fives = total_roll(current_turn.roll_three, 5)
 
     elif 'sixes' == allocate_to:
-        if game.player_one_sixes > -1:
+        if game.player_one_sixes is not None:
             raise exc
-        game.player_one_sixes = total_roll(roll, 6)
+        game.player_one_sixes = total_roll(current_turn.roll_three, 6)
 
     elif 'three_of_a_kind' == allocate_to:
-        if game.player_one_three_of_a_kind > -1:
+        if game.player_one_three_of_a_kind is not None:
             raise exc
         for _ in xrange(0, 3):
-            die = roll[_]
-            if roll[_:_ + 3] == [die, die, die]:  # goodness
-                total = total_roll(roll)
+            die = current_turn.roll_three[_]
+            if current_turn.roll_three[_:_ + 3] == [die, die, die]:  # goodness
+                total = total_roll(current_turn.roll_three)
                 break
         game.player_one_three_of_a_kind = total
 
     elif 'four_of_a_kind' == allocate_to:
-        if game.player_one_four_of_a_kind > -1:
+        if game.player_one_four_of_a_kind is not None:
             raise exc
         for _ in xrange(0, 2):
-            die = roll[_]
-            if roll[_:_ + 4] == [die, die, die, die]:  # I don't mean it I swear
-                total = total_roll(roll)
+            die = current_turn.roll_three[_]
+            if current_turn.roll_three[_:_ + 4] == [die, die, die, die]:  # I don't mean it I swear
+                total = total_roll(current_turn.roll_three)
                 break
         game.player_one_four_of_a_kind = total
 
     elif 'full_house' == allocate_to:
-        if game.player_one_full_house > -1:
+        if game.player_one_full_house is not None:
             raise exc
-        low = roll[0]
-        high = roll[4]
-        game.player_one_full_house = 25 if [low, low, high, high, high] == roll \
-                                           or [low, low, low, high, high] == roll \
+        low = current_turn.roll_three[0]
+        high = current_turn.roll_three[4]
+        game.player_one_full_house = 25 if [low, low, high, high, high] == current_turn.roll_three \
+                                           or [low, low, low, high, high] == current_turn.roll_three \
                                            or is_bonus_yahtzee else 0
 
     elif 'small_straight' == allocate_to:
-        if game.player_one_small_straight > -1:
+        if game.player_one_small_straight is not None:
             raise exc
         for _ in xrange(0, 2):
-            die = roll[_]
-            if roll[_:_ + 4] == [die, die + 1, die + 2, die + 3] or is_bonus_yahtzee:
+            die = current_turn.roll_three[_]
+            if current_turn.roll_three[_:_ + 4] == [die, die + 1, die + 2, die + 3] or is_bonus_yahtzee:
                 total = 30
                 break
         game.player_one_small_straight = total
 
     elif 'large_straight' == allocate_to:
-        if game.player_one_large_straight > -1:
+        if game.player_one_large_straight is not None:
             raise exc
-        die = roll[0]
-        game.player_one_large_straight = 40 if roll == [die, die + 1, die + 2, die + 3, die + 4] \
+        die = current_turn.roll_three[0]
+        game.player_one_large_straight = 40 if current_turn.roll_three == [die, die + 1, die + 2, die + 3, die + 4] \
                                                or is_bonus_yahtzee else 0
 
     elif 'yahtzee' == allocate_to:
         if game.player_one_yahtzee == 0:  # already been zeroed out sorrrrrryyyy
             raise exc
-        die = roll[0]
-        game.player_one_yahtzee = 50 if roll == [die, die, die, die, die] else 0
+        die = current_turn.roll_three[0]
+        game.player_one_yahtzee = 50 if current_turn.roll_three == [die, die, die, die, die] else 0
 
     elif 'chance' == allocate_to:
-        if game.player_one_chance > -1:
+        if game.player_one_chance is not None:
             raise exc
-        game.player_one_chance = roll_dice(roll)
+        game.player_one_chance = roll_dice(current_turn.roll_three)
+    else:
+        return False
 
-    return False
+    game.player_one_last_turn_date = datetime.now()
+    current_turn.date_completed = datetime.now()
+    current_turn.allocated_to = allocate_to
 
 
-def score_player_two(allocate_to, game, roll):
+def score_player_two(allocate_to, game, current_turn):
     """
     Attempts to allocate the roll to the desired scorecard category for player two
     :param allocate_to: the scorecard category
     :param game: the game with the scores
-    :param roll: the dice that have been rolled for the turn
+    :param current_turn: the dice that have been rolled for the turn
     :return:
     """
     allocate_to = string.lower(allocate_to)
@@ -346,99 +363,103 @@ def score_player_two(allocate_to, game, roll):
 
     # perform the bonus yahtzee check real quick
     if game.player_two_yahtzee > 0:
-        die = roll[0]
-        if roll == [die, die, die, die, die]:
+        die = current_turn.roll_three[0]
+        if current_turn.roll_three == [die, die, die, die, die]:
             game.player_two_bonus_yahtzee += [100]
             is_bonus_yahtzee = True  # this lets them score it for any box
 
     if 'ones' == allocate_to:
-        if game.player_two_ones > -1:
+        if game.player_two_ones is not None:
             raise exc
-        game.player_two_ones = total_roll(roll, 1)
+        game.player_two_ones = total_roll(current_turn.roll_three, 1)
 
     elif 'twos' == allocate_to:
-        if game.player_two_twos > -1:
+        if game.player_two_twos is not None:
             raise exc
-        game.player_two_twos = total_roll(roll, 2)
+        game.player_two_twos = total_roll(current_turn.roll_three, 2)
 
     elif 'threes' == allocate_to:
-        if game.player_two_threes > -1:
+        if game.player_two_threes is not None:
             raise exc
-        game.player_two_threes = total_roll(roll, 3)
+        game.player_two_threes = total_roll(current_turn.roll_three, 3)
 
     elif 'fours' == allocate_to:
-        if game.player_two_fours > -1:
+        if game.player_two_fours is not None:
             raise exc
-        game.player_two_fours = total_roll(roll, 4)
+        game.player_two_fours = total_roll(current_turn.roll_three, 4)
 
     elif 'fives' == allocate_to:
-        if game.player_two_fives > -1:
+        if game.player_two_fives is not None:
             raise exc
-        game.player_two_fives = total_roll(roll, 5)
+        game.player_two_fives = total_roll(current_turn.roll_three, 5)
 
     elif 'sixes' == allocate_to:
-        if game.player_two_sixes > -1:
+        if game.player_two_sixes is not None:
             raise exc
-        game.player_two_sixes = total_roll(roll, 6)
+        game.player_two_sixes = total_roll(current_turn.roll_three, 6)
 
     elif 'three_of_a_kind' == allocate_to:
-        if game.player_two_three_of_a_kind > -1:
+        if game.player_two_three_of_a_kind is not None:
             raise exc
         for _ in xrange(0, 3):
-            die = roll[_]
-            if roll[_:_ + 3] == [die, die, die]:  # goodness
-                total = total_roll(roll)
+            die = current_turn.roll_three[_]
+            if current_turn.roll_three[_:_ + 3] == [die, die, die]:  # goodness
+                total = total_roll(current_turn.roll_three)
                 break
         game.player_two_three_of_a_kind = total
 
     elif 'four_of_a_kind' == allocate_to:
-        if game.player_two_four_of_a_kind > -1:
+        if game.player_two_four_of_a_kind is not None:
             raise exc
         for _ in xrange(0, 2):
-            die = roll[_]
-            if roll[_:_ + 4] == [die, die, die, die]:  # I don't mean it I swear
-                total = total_roll(roll)
+            die = current_turn.roll_three[_]
+            if current_turn.roll_three[_:_ + 4] == [die, die, die, die]:  # I don't mean it I swear
+                total = total_roll(current_turn.roll_three)
                 break
         game.player_two_four_of_a_kind = total
 
     elif 'full_house' == allocate_to:
-        if game.player_two_full_house > -1:
+        if game.player_two_full_house is not None:
             raise exc
-        low = roll[0]
-        high = roll[4]
-        game.player_two_full_house = 25 if [low, low, high, high, high] == roll \
-                                           or [low, low, low, high, high] == roll \
+        low = current_turn.roll_three[0]
+        high = current_turn.roll_three[4]
+        game.player_two_full_house = 25 if [low, low, high, high, high] == current_turn.roll_three \
+                                           or [low, low, low, high, high] == current_turn.roll_three \
                                            or is_bonus_yahtzee else 0
 
     elif 'small_straight' == allocate_to:
-        if game.player_two_small_straight > -1:
+        if game.player_two_small_straight is not None:
             raise exc
         for _ in xrange(0, 2):
-            die = roll[_]
-            if roll[_:_ + 4] == [die, die + 1, die + 2, die + 3] or is_bonus_yahtzee:
+            die = current_turn.roll_three[_]
+            if current_turn.roll_three[_:_ + 4] == [die, die + 1, die + 2, die + 3] or is_bonus_yahtzee:
                 total = 30
                 break
         game.player_two_small_straight = total
 
     elif 'large_straight' == allocate_to:
-        if game.player_two_large_straight > -1:
+        if game.player_two_large_straight is not None:
             raise exc
-        die = roll[0]
-        game.player_two_large_straight = 40 if roll == [die, die + 1, die + 2, die + 3, die + 4] \
+        die = current_turn.roll_three[0]
+        game.player_two_large_straight = 40 if current_turn.roll_three == [die, die + 1, die + 2, die + 3, die + 4] \
                                                or is_bonus_yahtzee else 0
 
     elif 'yahtzee' == allocate_to:
         if game.player_two_yahtzee == 0:  # already been zeroed out sorrrrrryyyy
             raise exc
-        die = roll[0]
-        game.player_two_yahtzee = 50 if roll == [die, die, die, die, die] else 0
+        die = current_turn.roll_three[0]
+        game.player_two_yahtzee = 50 if current_turn.roll_three == [die, die, die, die, die] else 0
 
     elif 'chance' == allocate_to:
-        if game.player_two_chance > -1:
+        if game.player_two_chance is not None:
             raise exc
-        game.player_two_chance = roll_dice(roll)
+        game.player_two_chance = roll_dice(current_turn.roll_three)
+    else:
+        return False
 
-    return False
+    game.player_two_last_turn_date = datetime.now()
+    current_turn.date_completed = datetime.now()
+    current_turn.allocated_to = allocate_to
 
 
 def total_roll(roll, target=None):
