@@ -10,16 +10,17 @@ from models import User
 from helpers import request, token
 
 
-class UserEP(request.RequestHandler):
+class UserHandler(request.RequestHandler):
     def post(self):
         """
-        Verifies the identity of the user via Oauth using the credentials key provided and the user's auth code. If the
+        Verifies the identity of the user via Oauth using the user's auth code. If the
         user already exists, we return a JWT with their claim. If they don't already exist, we create their
         user in the datastore and return a JWT with their claim.
         :return: JWT with the user's claim, or nothing
         """
         self.response.headers.add('Access-Control-Allow-Origin', '*')
         self.response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        self.response.headers['Content-Type'] = 'application/json'
 
         data = json.loads(self.request.body)
 
@@ -82,9 +83,7 @@ class UserEP(request.RequestHandler):
         # create the JWT and send it back to the user. This should
         # be used on all subsequent requests!
         payload = {
-            "userKey": user.key.urlsafe(),
-            "success": True,
-            "msg": "User logged in"
+            "userKey": user.key.urlsafe()
         }
 
         try:
@@ -92,4 +91,6 @@ class UserEP(request.RequestHandler):
         except LookupError:
             return self.response.set_status(500, 'An error occurred while attempting to create credentials')
 
-        return self.response.write(jwt)
+        return self.response.write(json.dumps({
+            "jwt_token": jwt
+        }))
