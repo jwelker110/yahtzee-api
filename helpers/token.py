@@ -43,7 +43,7 @@ def decode_jwt(token, key=None, verify=True, algorithms='HS256', options=None):
         key = os.environ.get('JWT_SECRET')
 
     if key is None:
-        raise LookupError('The JWT secret has not been set! Please set it before continuing')
+        raise LookupError('JWT_SECRET has not been set! Please set it before continuing')
 
     if options is None:
         options = {
