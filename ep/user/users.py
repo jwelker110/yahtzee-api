@@ -4,7 +4,7 @@ from helpers import request
 from models import User
 
 
-class AllUsersHandler(request.RequestHandler):
+class UserAllHandler(request.RequestHandler):
     def get(self):
         """
         Return 10 users. If an offset is provided, the results will be offset by the
