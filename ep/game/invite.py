@@ -5,7 +5,7 @@ from models import Game, Invite, TurnCard
 from google.appengine.ext.ndb import Key
 
 
-class AcceptInviteHandler(request.RequestHandler):
+class CreateInviteHandler(request.RequestHandler):
     @decorators.jwt_required
     def post(self, payload):
         """
@@ -17,6 +17,9 @@ class AcceptInviteHandler(request.RequestHandler):
         self.response.headers.add('Access-Control-Allow-Origin', '*')
         self.response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
         self.response.headers['Content-Type'] = 'application/json'
+
+        if self.request.body is None or self.request.body is '':
+            return self.error(400)
 
         data = json.loads(self.request.body)
         player_two_key = data.get('player_two_key')

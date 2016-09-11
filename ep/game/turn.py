@@ -19,6 +19,9 @@ class TakeTurnHandler(request.RequestHandler):
         :param payload:
         :return: game key, turncard key, turn key, and the dice (array of dice values)
         """
+        if self.request.body is None or self.request.body is '':
+            return self.error(400)
+
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')
@@ -46,7 +49,7 @@ class TakeTurnHandler(request.RequestHandler):
                 return self.response.set_status(400, 'You need to start a new turn before you can roll')
 
             # the user owns this card, and there are still turns left. Let's take one
-            current_turn = turncard.turns[total_turns - 1]
+            current_turn = Key('Turn', turncard.turns[total_turns - 1]).get()
 
             if total_turns == 13:
                 # check if the move has been allocated already
@@ -83,7 +86,7 @@ class TakeTurnHandler(request.RequestHandler):
                 else:
                     return self.response.set_status(400, 'Dice do not match previous roll')
 
-            turncard.turns[total_turns - 1] = current_turn
+            turncard.turns[total_turns - 1] = current_turn.key
             turncard.put()
 
             return self.response.write(json.dumps({
@@ -106,6 +109,9 @@ class NewTurnHandler(request.RequestHandler):
         :param payload:
         :return:
         """
+        if self.request.body is None or self.request.body is '':
+            return self.error(400)
+
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')
@@ -127,7 +133,7 @@ class NewTurnHandler(request.RequestHandler):
                 return self.error(401)
 
             total_turns = len(turncard.turns)
-            current_turn = turncard.turns[total_turns - 1]
+            current_turn = Key('Turn', turncard.turns[total_turns - 1]).get()
             if total_turns != 0:
                 if total_turns == 13:
                     # check if the move has been allocated already
@@ -147,7 +153,7 @@ class NewTurnHandler(request.RequestHandler):
                 roll_two=[],
                 roll_three=[]
             )
-            turncard.turns += new_turn
+            turncard.turns += [new_turn.key]
             turncard.put()
 
             return self.response.write(json.dumps({
@@ -170,6 +176,9 @@ class CompleteTurnHandler(request.RequestHandler):
         :param payload:
         :return:
         """
+        if self.request.body is None or self.request.body is '':
+            return self.error(400)
+
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')
@@ -193,7 +202,7 @@ class CompleteTurnHandler(request.RequestHandler):
             return self.response.set_status(400, 'You should begin a turn before trying to complete one')
         # doesn't matter what turn this is, as long as it exists, and it hasn't been allocated, we can try to
         # allocate it to the game
-        current_turn = turncard.turns[total_turns - 1]
+        current_turn = Key('Turn', turncard.turns[total_turns - 1]).get()
         if current_turn.allocated_to is not None:
             return self.response.set_status(400, 'This turn has already been completed')
 
