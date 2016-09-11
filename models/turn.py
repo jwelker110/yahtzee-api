@@ -1,7 +1,11 @@
 from google.appengine.ext import ndb
 
 
-class Roll(ndb.Model):
-    dice = ndb.IntegerProperty(repeated=True)
+class Turn(ndb.Model):
+    roll_one = ndb.IntegerProperty(repeated=True)
+    roll_two = ndb.IntegerProperty(repeated=True)
+    roll_three = ndb.IntegerProperty(repeated=True)
 
-    date_rolled = ndb.DateTimeProperty(auto_now_add=True)
+    allocated_to = ndb.StringProperty(default=None)
+
+    date_completed = ndb.DateTimeProperty(auto_now_add=True)
