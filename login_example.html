@@ -35,16 +35,19 @@
 
         function signInCallback(authResult) {
             if (authResult['code']) {
-
+                // TODO REMOVE IN PROD
+                console.log(authResult['code']);
                 // Hide the sign-in button now that the user is authorized, for example:
                 $('#signinButton').attr('style', 'display: none');
 
                 // Send the code to the server
                 $.ajax({
                     type: 'POST',
-                    url: 'http://localhost:8080/auth',
+                    url: 'http://localhost:8080/api/v1/user/auth',
                     contentType: 'application/json',
                     success: function (result) {
+                        // TODO REMOVE IN PROD
+                        console.log(result);
                         // TODO Do something with the JWT returned from the server.
                         // Probably store it so you can send it with future requests.
                     },
