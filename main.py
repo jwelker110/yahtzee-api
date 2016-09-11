@@ -16,9 +16,23 @@
 #
 import webapp2
 
-from endpoints.user import UserEP
+from endpoints.auth import UserHandler, ReauthHandler
 
+
+class PlaceholderEP(webapp2.RequestHandler):
+    def get(self):
+        return self.response.write('This is a test endpoint')
 
 app = webapp2.WSGIApplication([
-    ('/auth', UserEP)
+    ('/api/v1/auth', UserHandler),
+    ('/api/v1/reauth', ReauthHandler),
+    ('/api/v1/user/game/history.json', PlaceholderEP),
+    ('/api/v1/user/game/all.json', PlaceholderEP),
+    ('/api/v1/user/rank.json', PlaceholderEP),
+    ('/api/v1/user/highscores.json', PlaceholderEP),
+    ('/api/v1/game/create.json', PlaceholderEP),
+    ('/api/v1/game/turn.json', PlaceholderEP),
+    ('/api/v1/game/roll.json', PlaceholderEP),
+    ('/api/v1/game/cancel', PlaceholderEP),
+
 ], debug=True, config={'Access-Control-Allow-Origin': '*'})
