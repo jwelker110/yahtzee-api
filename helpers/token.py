@@ -17,7 +17,7 @@ def encode_jwt(payload, key=None, algorithms='HS256', headers=None, json_encoder
         key = os.environ.get('JWT_SECRET')
 
     now = datetime.datetime.now()
-    payload['exp'] = now + datetime.timedelta(days=3)
+    payload['exp'] = now + datetime.timedelta(days=1)
     payload['iat'] = now
     try:
         token = jwt.encode(payload, key, algorithms, headers, json_encoder)
