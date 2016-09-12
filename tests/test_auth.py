@@ -3,7 +3,7 @@ import webtest
 import json
 
 from base import GameTestCase
-from ep import ReauthHandler, UserAllHandler
+from ep import ReauthHandler
 
 
 class TestCaseAuth(GameTestCase):
@@ -13,8 +13,7 @@ class TestCaseAuth(GameTestCase):
     def setUp(self):
         super(TestCaseAuth, self).setUp()
         app = webapp2.WSGIApplication([
-            ('/api/v1/user/reauth', ReauthHandler),
-            ('/api/v1/user/all', UserAllHandler)  # todo move this to separate module
+            ('/api/v1/user/reauth', ReauthHandler)
         ])
         self.testapp = webtest.TestApp(app)
 
@@ -29,11 +28,3 @@ class TestCaseAuth(GameTestCase):
 
         self.assertIn('jwt_token', data, 'JWT was not returned for player one')
         self.assertNotEqual(self.jwt_token_player_one, data.get('jwt_token'))
-
-    def test_all_users(self):
-        # todo move to separate module
-        resp = self.testapp.get('/api/v1/user/all')
-
-        data = json.loads(resp.body)
-        print data
-        self.assertEqual(len(data), 0, 'Data has stuff in it!')
