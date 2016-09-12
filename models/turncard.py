@@ -9,4 +9,4 @@ class TurnCard(ndb.Model):
     game = ndb.KeyProperty(kind='Game', required=True)
 
     # going to have 13 turns
-    turns = ndb.StructuredProperty(turn.Turn, repeated=True)
+    turns = ndb.KeyProperty('Turn', repeated=True)
