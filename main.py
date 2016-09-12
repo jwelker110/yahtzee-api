@@ -16,7 +16,9 @@
 #
 import webapp2
 
-from endpoints.auth import UserHandler, ReauthHandler
+from ep import UserHandler, ReauthHandler
+from ep import CreateInviteHandler
+from ep import UserAllHandler, UserRankHandler
 
 
 class PlaceholderEP(webapp2.RequestHandler):
@@ -24,15 +26,17 @@ class PlaceholderEP(webapp2.RequestHandler):
         return self.response.write('This is a test endpoint')
 
 app = webapp2.WSGIApplication([
-    ('/api/v1/auth', UserHandler),
-    ('/api/v1/reauth', ReauthHandler),
-    ('/api/v1/user/game/history.json', PlaceholderEP),
-    ('/api/v1/user/game/all.json', PlaceholderEP),
-    ('/api/v1/user/rank.json', PlaceholderEP),
-    ('/api/v1/user/highscores.json', PlaceholderEP),
-    ('/api/v1/game/create.json', PlaceholderEP),
-    ('/api/v1/game/turn.json', PlaceholderEP),
-    ('/api/v1/game/roll.json', PlaceholderEP),
-    ('/api/v1/game/cancel', PlaceholderEP),
-
-], debug=True, config={'Access-Control-Allow-Origin': '*'})
+    ('/', PlaceholderEP),
+    ('/api/v1/user/auth', UserHandler),
+    ('/api/v1/user/reauth', ReauthHandler),
+    ('/api/v1/game/invite', CreateInviteHandler),
+    ('/api/v1/user/all', UserAllHandler),
+    ('/api/v1/user/rank', UserRankHandler),
+    # ('/api/v1/user/game/history.json', PlaceholderEP),
+    # ('/api/v1/user/game/all.json', PlaceholderEP),
+    # ('/api/v1/user/highscores.json', PlaceholderEP),
+    # ('/api/v1/game/create.json', PlaceholderEP),
+    # ('/api/v1/game/turn.json', PlaceholderEP),
+    # ('/api/v1/game/roll.json', PlaceholderEP),
+    # ('/api/v1/game/cancel', PlaceholderEP),
+], debug=True)
