@@ -70,3 +70,20 @@ class Game(ndb.Model):
     player_two_score_total = ndb.ComputedProperty(lambda self: self.player_two_upper_total + self.player_two_lower_total)
 
     game_completed = ndb.ComputedProperty(lambda self: self.player_one_completed and self.player_two_completed)
+
+    def _winner_score(self):
+        if self.player_one_score_total > self.player_two_score_total:
+            return self.player_one_score_total
+        return self.player_two_score_total
+
+    winner_score = ndb.ComputedProperty(_winner_score)
+
+    def _winner_name(self):
+        if self.player_one_score_total > self.player_two_score_total:
+            return self.player_one_name
+        elif self.player_one_score_total == self.player_two_score_total:
+            return '%s, %s' % (self.player_one_name, self.player_two_name)
+        else:
+            return self.player_two_name
+
+    winner_name = ndb.ComputedProperty(_winner_name)
