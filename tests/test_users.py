@@ -33,3 +33,11 @@ class TestCaseUsers(GameTestCase):
         resp = self.testapp.get('/api/v1/user/all')
         data = json.loads(resp.body)
         self.assertEqual(len(data), 2, 'Data did not contain two user entities')
+
+    def test_all_users_offset(self):
+        User(username='Tester01', email='Tester01@email.com').put()
+        User(username='Tester02', email='Tester02@email.com').put()
+
+        resp = self.testapp.get('/api/v1/user/all?offset=1')
+        data = json.loads(resp.body)
+        self.assertEqual(len(data), 1, 'Data did not contain one user entity')
