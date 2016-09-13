@@ -24,7 +24,7 @@ class CreateInviteHandler(request.RequestHandler):
         data = json.loads(self.request.body)
         player_two_key = data.get('player_two_key')
 
-        user = Key(urlsafe=payload.get('userKey'))
+        user = Key(urlsafe=payload.get('userKey')).get()
 
         if user is None:
             # not sure how the JWT slipped through but they aren't authorized to do this
@@ -38,14 +38,14 @@ class CreateInviteHandler(request.RequestHandler):
 
         # awesome we have player one and two
         game = Game.query(
-            Game.player_one == user,
+            Game.player_one == user.key,
             Game.player_two == player_two.key,
             Game.player_one_completed == False,
             Game.player_two_completed == False).get()
 
         if game is None:
             game = Game.query(Game.player_one == player_two.key,
-                              Game.player_two == user,
+                              Game.player_two == user.key,
                               Game.player_one_completed == False,
                               Game.player_two_completed == False).get()
 
@@ -57,7 +57,7 @@ class CreateInviteHandler(request.RequestHandler):
 
         # let's check for an existing invite between these players
         invite = Invite.query(
-            Invite.from_player == user,
+            Invite.from_player == user.key,
             Invite.to_player == player_two.key,
             Invite.accepted == False,
             Invite.rejected == False
@@ -68,7 +68,7 @@ class CreateInviteHandler(request.RequestHandler):
 
         invite = Invite.query(
             Invite.from_player == player_two.key,
-            Invite.to_player == user,
+            Invite.to_player == user.key,
             Invite.accepted == False,
             Invite.rejected == False
         ).get()
@@ -79,35 +79,70 @@ class CreateInviteHandler(request.RequestHandler):
             try:
                 game = Game(
                     player_one=player_two.key,
-                    player_two=user
+                    player_two=user.key
                 )
                 player_one_turncard = TurnCard(
                     owner=player_two.key,
                     game=game.key
                 )
                 player_two_turncard = TurnCard(
-                    owner=user,
+                    owner=user.key,
                     game=game.key
                 )
                 player_one_turncard.put()
                 player_two_turncard.put()
                 game.put()
+
+                return self.response.write(json.dumps({
+                    "game_key": game.key.urlsafe(),
+                    "game": game.to_dict()
+                }))
+
             except:
                 return self.response.set_status(500, 'An error occurred while attempting to create a game')
-
-            #
-            return self.response.write(json.dumps({
-                "game_key": game.key.urlsafe(),
-                "game": game.to_dict()
-            }))
 
         # alright there are no invites between these players yet so let's make one
         try:
             invite = Invite(
-                from_player=user,
-                to_player=player_two.key
+                from_player=user.key,
+                from_player_name=user.username,
+                to_player=player_two.key,
+                to_player_name=player_two.username
             )
             invite.put()
             return self.response.set_status(200)
         except:
             return self.response.set_status(500, 'An error occurred while attempting to create an invite')
+
+
+class RetrieveInviteHandler(request.RequestHandler):
+    @decorators.jwt_required
+    def post(self, payload):
+        """
+        Retrieve the next 10 invites associated with the user, offset by offset amount
+        :param payload:
+        :return:
+        """
+        offset = 0
+
+        if self.request.body is not None:
+            data = json.loads(self.request.body)
+            try:
+                offset = int(data.get('offset'))
+            except:
+                pass
+
+        user = Key(urlsafe=payload.get('userKey'))
+
+        if user is None:
+            return self.error(401)
+
+        # user is here let's get their invites
+        invites = Invite.query(Invite.to_player == user,
+                               Invite.rejected == False,
+                               Invite.accepted == False).fetch(limit=10, offset=offset)
+
+        return self.response.write(json.dumps([{
+                                                  "inviter": invite.from_player.urlsafe(),
+                                                  "inviter_name": invite.from_player_name
+                                              } for invite in invites]))

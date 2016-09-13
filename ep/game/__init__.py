@@ -1,2 +1,2 @@
-from invite import CreateInviteHandler
+from invite import CreateInviteHandler, RetrieveInviteHandler
 from history import UserGamesHistoryHandler, UserRollHistoryHandler
