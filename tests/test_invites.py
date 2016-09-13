@@ -1,18 +1,22 @@
 import webapp2
 import webtest
+import json
 
-from ep import CreateInviteHandler
+from ep import CreateInviteHandler, RetrieveInviteHandler
 from base import GameTestCase
+from models import User
+from helpers import token
 
 
 class TestCaseInvites(GameTestCase):
-    jwt_token_player_one = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0NzM4ODE1NDAsImlhdCI6MTQ3MzYyMjM0MCwidXNlcktleSI6ImFoSmtaWFotZVdGb2RIcGxaUzB4TkRJeE1EbHlIZ3NTQkZWelpYSWlGR3AzWld4clpYSXhNVEJBWjIxaGFXd3VZMjl0REEifQ.xEZ7kWXf7vyIqLrR5w95_gCIAw07xgVggTu--CryPms"
-    jwt_token_player_two = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE0NzM4ODE1ODYsInVzZXJLZXkiOiJhaEprWlhaLWVXRm9kSHBsWlMweE5ESXhNRGx5SUFzU0JGVnpaWElpRm1scGMyRjBiM0pwZUdKdmVFQm5iV0ZwYkM1amIyME0iLCJpYXQiOjE0NzM2MjIzODZ9.9ybTAPntQyFRlqalmHNHko-bi5dr47xnnjHvigWNGoo"
 
     def setUp(self):
         super(TestCaseInvites, self).setUp()
+        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_memcache_stub()
         app = webapp2.WSGIApplication([
-            ('/api/v1/user/game/invite', CreateInviteHandler)
+            ('/api/v1/user/game/invite', CreateInviteHandler),
+            ('/api/v1/user/game/pending', RetrieveInviteHandler)
         ])
         self.testapp = webtest.TestApp(app)
 
@@ -20,5 +24,28 @@ class TestCaseInvites(GameTestCase):
         super(TestCaseInvites, self).tearDown()
 
     def test_send_invites(self):
-        # self.testapp.post('/api/v1/user/game/invite', params=json.dumps({'jwt_token': }))
-        self.assertEqual(1, 1, '1 equals 1')
+        user_one = User(username='Tester01', email='Tester01@email.com')
+        user_two = User(username='Tester02', email='Tester02@email.com')
+
+        user_one.put()
+        user_two.put()
+
+        jwt_one = token.encode_jwt({"userKey": user_one.key.urlsafe()})
+        jwt_two = token.encode_jwt({"userKey": user_two.key.urlsafe()})
+
+        # create the invite
+        resp = self.testapp.post('/api/v1/user/game/invite',
+                                 params=json.dumps({
+                                     "jwt_token": jwt_one,
+                                     "player_two_key": user_two.key.urlsafe()
+                                 }),
+                                 content_type='application/json')
+        # verify the invite was sent to user_two
+        resp = self.testapp.post('/api/v1/user/game/pending',
+                                 params=json.dumps({
+                                     "jwt_token": jwt_two
+                                 }),
+                                 content_type='application/json')
+        data = json.loads(resp.body)
+        print data
+        self.assertEqual(len(data), 1, 'One invite was not created')
