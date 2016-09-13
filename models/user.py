@@ -7,4 +7,3 @@ class User(ndb.Model):
     email = ndb.StringProperty(required=True)
 
     wins = ndb.IntegerProperty(default=0)
-    losses = ndb.IntegerProperty(default=0)
