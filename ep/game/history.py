@@ -45,9 +45,6 @@ class UserRollHistoryHandler(request.RequestHandler):
         Retrieves user's roll history for the provided game
         :return:
         """
-        if self.request.body is None:
-            return self.response.set_status(400, 'Please provide the game\'s key to retrieve the rolls')
-
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
         user = payload.get('userKey')

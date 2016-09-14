@@ -124,13 +124,12 @@ class RetrieveInviteHandler(request.RequestHandler):
         :return:
         """
         offset = 0
+        data = json.loads(self.request.body)
 
-        if self.request.body is not None:
-            data = json.loads(self.request.body)
-            try:
-                offset = int(data.get('offset'))
-            except:
-                pass
+        try:
+            offset = int(data.get('offset'))
+        except:
+            pass
 
         user = Key(urlsafe=payload.get('userKey'))
 

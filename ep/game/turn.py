@@ -19,9 +19,6 @@ class TakeTurnHandler(request.RequestHandler):
         :param payload:
         :return: game key, turncard key, turn key, and the dice (array of dice values)
         """
-        if self.request.body is None or self.request.body is '':
-            return self.error(400)
-
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')
@@ -109,9 +106,6 @@ class NewTurnHandler(request.RequestHandler):
         :param payload:
         :return:
         """
-        if self.request.body is None or self.request.body is '':
-            return self.error(400)
-
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')
@@ -176,9 +170,6 @@ class CompleteTurnHandler(request.RequestHandler):
         :param payload:
         :return:
         """
-        if self.request.body is None or self.request.body is '':
-            return self.error(400)
-
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
         turncard_key = data.get('turncard_key')

@@ -13,13 +13,11 @@ class UserGamesHandler(request.RequestHandler):
         :param payload: the JWT payload
         :return:
         """
-        if self.request.body is not None:
-            data = json.loads(self.request.body)
-            try:
-                offset = int(data.get('offset'))
-            except:
-                offset = 0
-        else:
+        data = json.loads(self.request.body)
+
+        try:
+            offset = int(data.get('offset'))
+        except:
             offset = 0
 
         key = Key(urlsafe=payload.get('jwt_token'))

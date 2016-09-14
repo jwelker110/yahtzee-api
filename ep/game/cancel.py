@@ -12,9 +12,6 @@ class CancelGameHandler(request.RequestHandler):
         :param payload: JWT payload containing the userKey
         :return: 200 if successful, otherwise a response code other than 2-- with a message
         """
-        if self.request.body is None:
-            return self.error(400)
-
         data = json.loads(self.request.body)
 
         user = Key(urlsafe=payload.get('userKey')).get()
