@@ -12,6 +12,8 @@ def jwt_required(func):
     """
     @wraps(func)
     def wrapper(self):
+        if self.request.body is None or self.request.body is '':
+            return self.response.set_status(400, 'Please include the token with the request')
         data = json.loads(self.request.body)
         jwt_token = data.get('jwt_token')
         payload = token.decode_jwt(jwt_token)
