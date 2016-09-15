@@ -22,9 +22,6 @@ class UserHandler(request.RequestHandler):
         self.response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
         self.response.headers['Content-Type'] = 'application/json'
 
-        if self.request.body is None or self.request.body == '':
-            return self.error(400)
-
         data = json.loads(self.request.body)
 
         # we are using this application to make the request on behalf of the user
