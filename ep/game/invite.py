@@ -145,3 +145,34 @@ class RetrieveInviteHandler(request.RequestHandler):
                                                   "inviter": invite.from_player.urlsafe(),
                                                   "inviter_name": invite.from_player_name
                                               } for invite in invites]))
+
+
+class CancelInviteHandler(request.RequestHandler):
+    @decorators.jwt_required
+    def post(self, payload):
+        """
+        Cancel the invite associated with the provided player keys
+        :param payload:
+        :return:
+        """
+        data = json.loads(self.request.body)
+        user = Key(urlsafe=payload.get('userKey'))
+        target_user = data.get('target_user')
+
+        if target_user is None or target_user is '':
+            return self.error(400)
+
+        invite = Invite.query(Invite.from_player == user,
+                               Invite.rejected == False,
+                               Invite.accepted == False).get()
+
+        if invite is None:
+            return self.response.set_status(400, 'No invites exist for these players')
+
+        # let's cancel the invite
+        try:
+            invite.rejected = True
+            invite.put()
+            return self.error(200)
+        except:
+            return self.error(500)
