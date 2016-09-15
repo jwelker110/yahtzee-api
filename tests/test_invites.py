@@ -122,6 +122,15 @@ class TestCaseInvites(GameTestCase):
                                  expect_errors=True)
         self.assertIn('400', str(resp))
 
+    def test_cancel_invite_wrong_args(self):
+        # send a cancel request with wrong args!
+        resp = self.testapp.post('/api/v1/game/cancel',
+                                 params=json.dumps({"jwt_token": self.jwt_token_player_one,
+                                                    "wrong_args_please": self.user_two.key.urlsafe()
+                                                    }),
+                                 expect_errors=True)
+        self.assertIn('400', str(resp))
+
     def test_retrieve_invite(self):
         # let's create two invites first
         pass
