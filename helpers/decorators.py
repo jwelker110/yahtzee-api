@@ -17,7 +17,7 @@ def jwt_required(func):
         data = json.loads(self.request.body)
         jwt_token = data.get('jwt_token')
         payload = token.decode_jwt(jwt_token)
-        if payload is None:
+        if payload is '' or payload is None:
             return self.error(401)
         func(self, payload)
     return wrapper
