@@ -167,7 +167,12 @@ class CancelInviteHandler(request.RequestHandler):
                                Invite.accepted == False).get()
 
         if invite is None:
-            return self.response.set_status(400, 'No invites exist for these players')
+            invite = Invite.query(Invite.to_player == user,
+                                  Invite.rejected == False,
+                                  Invite.accepted == False).get()
+
+        if invite is None:
+            return self.response.set_status(400, 'No pending invites exist for these users')
 
         # let's cancel the invite
         try:
