@@ -46,6 +46,14 @@ class TestCaseInvites(GameTestCase):
                                  content_type='application/json')
         data = json.loads(resp.body)
         self.assertEqual(len(data), 1, 'One invite was not created')
+        invite = Invite.query(Invite.from_player == self.user_one.key,
+                              Invite.to_player == self.user_two.key).get()
+        self.assertIsNotNone(invite)
+
+    def test_send_invite_no_auth(self):
+        # try to create the invite without auth
+        resp = self.testapp.post('/api/v1/game/invite', expect_errors=True)
+        self.assertIn('400', str(resp))
 
     def test_cancel_invites(self):
         # cancel an invite please, but first we need to have one
