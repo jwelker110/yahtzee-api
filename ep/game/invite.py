@@ -24,6 +24,9 @@ class CreateInviteHandler(request.RequestHandler):
         data = json.loads(self.request.body)
         player_two_key = data.get('player_two_key')
 
+        if player_two_key is None or player_two_key is '':
+            return self.response.set_status(400, '\'player_two_key\' argument was not included in the request')
+
         user = Key(urlsafe=payload.get('userKey')).get()
 
         if user is None:
@@ -160,7 +163,7 @@ class CancelInviteHandler(request.RequestHandler):
         target_user = data.get('target_user')
 
         if target_user is None or target_user is '':
-            return self.error(400)
+            return self.response.set_status(400, 'The target user was not provided')
 
         invite = Invite.query(Invite.from_player == user,
                                Invite.rejected == False,
