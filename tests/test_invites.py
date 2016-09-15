@@ -70,3 +70,24 @@ class TestCaseInvites(GameTestCase):
         invite = invite.get()
         self.assertIn('200', str(resp))
         self.assertTrue(invite.rejected, 'The invite was not rejected')
+
+    def test_cancel_invite_not_exist(self):
+        # try to cancel an invite that doesn't belong to the user
+        user_three = User(username='Tester03', email='Tester03@email.com')
+        user_three.put()
+        user_three_jwt = token.encode_jwt({"userKey": user_three.key.urlsafe()})
+
+        invite = Invite(
+            to_player=self.user_one.key,
+            to_player_name=self.user_one.username,
+            from_player=self.user_two.key,
+            from_player_name=self.user_two.username
+        ).put()
+        resp = self.testapp.post('/api/v1/game/cancel',
+                                 params=json.dumps({
+                                     "jwt_token": user_three_jwt,
+                                     "target_user": self.user_one.key.urlsafe()
+                                 }),
+                                 content_type='application/json',
+                                 expect_errors=True)
+        self.assertIn('400', str(resp))
