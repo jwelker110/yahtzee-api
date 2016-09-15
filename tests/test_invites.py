@@ -55,6 +55,36 @@ class TestCaseInvites(GameTestCase):
         resp = self.testapp.post('/api/v1/game/invite', expect_errors=True)
         self.assertIn('400', str(resp))
 
+    def test_send_invite_already_exists(self):
+        # try to send an invite to a user that already has an invite pending please
+        # start by creating the invite
+        invite = Invite(
+            to_player=self.user_one.key,
+            to_player_name=self.user_one.username,
+            from_player=self.user_two.key,
+            from_player_name=self.user_two.username
+        )
+        invite.put()
+
+        # invite created, so let's have user_two try to send an invite to user_one
+        resp = self.testapp.post('/api/v1/game/invite',
+                                 params=json.dumps({
+                                     "jwt_token": self.jwt_token_player_two,
+                                     "player_two_key": self.user_one.key.urlsafe()}),
+                                 content_type='application/json',
+                                 expect_errors=True)
+        self.assertIn('400', str(resp))
+
+    def test_send_invite_wrong_args(self):
+        # try to create an invite with the wrong arguments 'n stuff!
+        resp = self.testapp.post('/api/v1/game/invite',
+                                 params=json.dumps({
+                                     "jwt_token": self.jwt_token_player_two,
+                                     "wrong_args_please": self.user_one.key.urlsafe()}),
+                                 content_type='application/json',
+                                 expect_errors=True)
+        self.assertIn('400', str(resp))
+
     def test_cancel_invites(self):
         # cancel an invite please, but first we need to have one
         invite = Invite(to_player=self.user_one.key,
@@ -91,3 +121,7 @@ class TestCaseInvites(GameTestCase):
                                  content_type='application/json',
                                  expect_errors=True)
         self.assertIn('400', str(resp))
+
+    def test_retrieve_invite(self):
+        # let's create two invites first
+        pass
