@@ -82,8 +82,11 @@ class CreateInviteHandler(request.RequestHandler):
             try:
                 game = Game(
                     player_one=player_two.key,
-                    player_two=user.key
+                    player_one_name=player_two.username,
+                    player_two=user.key,
+                    player_two_name=user.username
                 )
+                game.put()
                 player_one_turncard = TurnCard(
                     owner=player_two.key,
                     game=game.key
@@ -94,14 +97,15 @@ class CreateInviteHandler(request.RequestHandler):
                 )
                 player_one_turncard.put()
                 player_two_turncard.put()
-                game.put()
 
                 return self.response.write(json.dumps({
                     "game_key": game.key.urlsafe(),
-                    "game": game.to_dict()
+                    "game": game.to_dict(exclude=['player_one',
+                                                  'player_two'])
                 }))
 
-            except:
+            except Exception as e:
+                print e.message
                 return self.response.set_status(500, 'An error occurred while attempting to create a game')
 
         # alright there are no invites between these players yet so let's make one
