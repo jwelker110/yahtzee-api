@@ -28,5 +28,4 @@ class UserAllHandler(request.RequestHandler):
                                                        "userKey": user.key.urlsafe()
                                                    } for user in users]))
         except Exception as e:
-            print e.message
             return self.error(500)

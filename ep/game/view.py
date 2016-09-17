@@ -1,5 +1,7 @@
 import json
 
+from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
+
 from helpers import request, decorators
 from google.appengine.ext.ndb import Key
 
@@ -16,7 +18,11 @@ class ViewGameHandler(request.RequestHandler):
         try:
             user = Key(urlsafe=payload.get('userKey'))
             game = Key(urlsafe=game_key).get()
-        except:
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
             return self.error(500)
 
         if game is None:
@@ -28,6 +34,6 @@ class ViewGameHandler(request.RequestHandler):
 
         return self.response.write(json.dumps({
             "game_key": game_key,
-            "game": game.to_dict(exclued=['player_one',
+            "game": game.to_dict(exclude=['player_one',
                                           'player_two'])
         }))

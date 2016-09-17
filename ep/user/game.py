@@ -1,5 +1,7 @@
 import json
 
+from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
+
 from helpers import request, decorators
 from models import Game
 from google.appengine.ext.ndb import Key, OR, AND
@@ -20,7 +22,14 @@ class UserGamesHandler(request.RequestHandler):
         except:
             offset = 0
 
-        key = Key(urlsafe=payload.get('jwt_token'))
+        try:
+            key = Key(urlsafe=payload.get('jwt_token'))
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         try:
             games = Game.query(

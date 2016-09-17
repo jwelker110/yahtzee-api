@@ -2,6 +2,8 @@ import json
 import random
 import string
 
+from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
+
 from helpers import request, decorators, exceptions
 from models import Turn, TurnCard
 from google.appengine.ext.ndb import Key
@@ -23,8 +25,15 @@ class TakeTurnHandler(request.RequestHandler):
         turn_key = data.get('turn_key')
         dice_to_roll = data.get('dice_to_roll')
 
-        user = Key(urlsafe=payload.get('userKey'))
-        game = Key(urlsafe=game_key)
+        try:
+            user = Key(urlsafe=payload.get('userKey'))
+            game = Key(urlsafe=game_key)
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         if user is None:
             # not sure how the JWT slipped through but they aren't authorized to do this
@@ -111,8 +120,15 @@ class NewTurnHandler(request.RequestHandler):
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
 
-        user = Key(urlsafe=payload.get('userKey'))
-        game = Key(urlsafe=game_key)
+        try:
+            user = Key(urlsafe=payload.get('userKey'))
+            game = Key(urlsafe=game_key)
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         if user is None:
             # not sure how the JWT slipped through but they aren't authorized to do this
@@ -177,8 +193,15 @@ class CompleteTurnHandler(request.RequestHandler):
         game_key = data.get('game_key')
         allocate_to = data.get('allocate_to')
 
-        user = Key(urlsafe=payload.get('userKey'))
-        game = Key(urlsafe=game_key)
+        try:
+            user = Key(urlsafe=payload.get('userKey'))
+            game = Key(urlsafe=game_key)
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         if user is None:
             # not sure how the JWT slipped through but they aren't authorized to do this

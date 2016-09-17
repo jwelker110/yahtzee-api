@@ -1,5 +1,7 @@
 import json
 
+from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
+
 from helpers import request, decorators
 from models import Game, TurnCard
 from google.appengine.ext.ndb import Key, OR, AND
@@ -22,7 +24,14 @@ class UserGamesHistoryHandler(request.RequestHandler):
         else:
             offset = 0
 
-        user_key = Key(urlsafe=payload.get('userKey'))
+        try:
+            user_key = Key(urlsafe=payload.get('userKey'))
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         try:
             games = Game.query(
@@ -62,5 +71,9 @@ class UserRollHistoryHandler(request.RequestHandler):
                                                 "allocated_to": turn.allocated_to,
                                                 "date_completed": turn.date_completed
                                             } for turn in turncard.turns]))
-        except:
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
             return self.error(500)

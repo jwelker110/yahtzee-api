@@ -1,5 +1,7 @@
 import json
 
+from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
+
 from helpers import decorators, request
 from google.appengine.ext.ndb import Key
 
@@ -14,8 +16,15 @@ class CancelGameHandler(request.RequestHandler):
         """
         data = json.loads(self.request.body)
 
-        user = Key(urlsafe=payload.get('userKey')).get()
-        game = Key(urlsafe=data.get('gameKey')).get()
+        try:
+            user = Key(urlsafe=payload.get('userKey')).get()
+            game = Key(urlsafe=data.get('gameKey')).get()
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         if user is None or game is None:
             return self.error(400)

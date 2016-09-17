@@ -1,5 +1,7 @@
 import json
 
+from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
+
 from helpers import request, decorators
 from models import Game, Invite, TurnCard
 from google.appengine.ext.ndb import Key
@@ -27,14 +29,20 @@ class CreateInviteHandler(request.RequestHandler):
         if player_two_key is None or player_two_key is '':
             return self.response.set_status(400, '\'player_two_key\' argument was not included in the request')
 
-        user = Key(urlsafe=payload.get('userKey')).get()
+        try:
+            user = Key(urlsafe=payload.get('userKey')).get()
+            # grab player two please
+            player_two = Key(urlsafe=player_two_key).get()
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         if user is None:
             # not sure how the JWT slipped through but they aren't authorized to do this
             return self.error(401)
-
-        # grab player two please
-        player_two = Key(urlsafe=player_two_key).get()
 
         if player_two is None:
             return self.error(400)
@@ -138,7 +146,14 @@ class RetrieveInviteHandler(request.RequestHandler):
         except:
             pass
 
-        user = Key(urlsafe=payload.get('userKey'))
+        try:
+            user = Key(urlsafe=payload.get('userKey'))
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         if user is None:
             return self.error(401)
@@ -163,8 +178,16 @@ class CancelInviteHandler(request.RequestHandler):
         :return:
         """
         data = json.loads(self.request.body)
-        user = Key(urlsafe=payload.get('userKey'))
         target_user = data.get('target_user')
+
+        try:
+            user = Key(urlsafe=payload.get('userKey'))
+        except TypeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except ProtocolBufferDecodeError:
+            return self.response.set_status(400, 'key was unable to be retrieved')
+        except Exception as e:
+            return self.error(500)
 
         if target_user is None or target_user is '':
             return self.response.set_status(400, 'The target user was not provided')
