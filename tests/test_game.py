@@ -2,7 +2,7 @@ import webapp2
 import webtest
 import json
 
-from ep import ViewGameHandler
+from ep import ViewGameHandler, CancelGameHandler
 from base import GameTestCase
 from models import User, Game, TurnCard
 from helpers import token
@@ -15,7 +15,8 @@ class TestCaseGame(GameTestCase):
         self.testbed.init_datastore_v3_stub()
         self.testbed.init_memcache_stub()
         app = webapp2.WSGIApplication([
-            ('/api/v1/game', ViewGameHandler)
+            ('/api/v1/game', ViewGameHandler),
+            ('/api/v1/game/cancel', CancelGameHandler)
         ])
         self.testapp = webtest.TestApp(app)
         self.user_one = User(username='Tester01', email='Tester01@email.com')
@@ -39,6 +40,9 @@ class TestCaseGame(GameTestCase):
         super(TestCaseGame, self).tearDown()
 
     def test_retrieve_game(self):
+        """
+        Tests retrieving details for their game
+        """
         resp = self.testapp.post('/api/v1/game', params=json.dumps({
             "jwt_token": self.jwt_token_player_one,
             "game_key": self.game.key.urlsafe()
@@ -48,8 +52,22 @@ class TestCaseGame(GameTestCase):
         self.assertIsNotNone(resp['game_key'], 'Game key was not returned')
 
     def test_retrieve_game_wrong_user(self):
+        """
+        Tests to ensure users are unable to query details about other users games
+        :return:
+        """
         resp = self.testapp.post('/api/v1/game', params=json.dumps({
             "jwt_token": self.jwt_token_player_three,
             "game_key": self.game.key.urlsafe()
         }), expect_errors=True)
         self.assertIn('400', resp.status, 'Did not properly handle a random string passed for key')
+
+    def test_cancel_game(self):
+        """
+        Tests to ensure a user may forfeit a game
+        """
+        resp = self.testapp.post('/api/v1/game/cancel', params=json.dumps({
+            "jwt_token": self.jwt_token_player_one,
+            "game_key": self.game.key.urlsafe()
+        }))
+        self.assertTrue(self.game.player_one_cancelled, 'Player One was unable to cancel the game')
