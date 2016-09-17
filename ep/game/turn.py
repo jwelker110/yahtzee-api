@@ -45,7 +45,7 @@ class TakeTurnHandler(request.RequestHandler):
                 return self.response.set_status(400, 'You need to start a new turn before you can roll')
 
             # the user owns this card, and there are still turns left. Let's take one
-            current_turn = Key('Turn', turncard.turns[total_turns - 1]).get()
+            current_turn = turncard.turns[total_turns - 1].get()
 
             if total_turns == 13:
                 # check if the move has been allocated already
@@ -69,31 +69,34 @@ class TakeTurnHandler(request.RequestHandler):
                 # turn needs to be completed
                 return self.response.set_status(400, "You need to complete this turn")
             elif len(current_turn.roll_two) == 0:
-                if set(dice_to_roll).issubset(current_turn.roll_two):
+                try:
                     roll_results = roll_dice(current_turn.roll_one, dice_to_roll)
                     current_turn.roll_two = roll_results
-                else:
+                except ValueError:
                     return self.response.set_status(400, 'Dice do not match previous roll')
+                except:
+                    return self.response.set_status(500, 'Error occurred while rolling')
             else:
-                if set(dice_to_roll).issubset(current_turn.roll_three):
+                try:
                     roll_results = roll_dice(current_turn.roll_two, dice_to_roll)
                     current_turn.roll_three = roll_results
                     turn_roll_count = 3
-                else:
+                except ValueError:
                     return self.response.set_status(400, 'Dice do not match previous roll')
+                except:
+                    return self.response.set_status(500, 'Error occurred while rolling')
 
             turncard.turns[total_turns - 1] = current_turn.key
             turncard.put()
 
             return self.response.write(json.dumps({
                 "game_key": game_key,
-                "turncard_key": turncard.key.urlsafe(),
                 "turn_key": turn_key,
                 "roll_results": roll_results,
                 "turn_roll_count": turn_roll_count
             }))
 
-        except:
+        except Exception as e:
             return self.error(500)
 
 
@@ -126,8 +129,9 @@ class NewTurnHandler(request.RequestHandler):
                 return self.error(401)
 
             total_turns = len(turncard.turns)
-            current_turn = Key('Turn', turncard.turns[total_turns - 1]).get()
+
             if total_turns != 0:
+                current_turn = turncard.turns[total_turns - 1].get()
                 if total_turns == 13:
                     # check if the move has been allocated already
                     if current_turn.allocated_to is not None:
@@ -146,17 +150,17 @@ class NewTurnHandler(request.RequestHandler):
                 roll_two=[],
                 roll_three=[]
             )
+            new_turn.put()
             turncard.turns += [new_turn.key]
             turncard.put()
 
             return self.response.write(json.dumps({
                 "game_key": game_key,
-                "turncard_key": turncard.key.urlsafe(),
-                "turn_key": new_turn.key.urlsafe,
+                "turn_key": new_turn.key.urlsafe(),
                 "roll_results": roll_results,
                 "turn_roll_count": 1
             }))
-        except:
+        except Exception as e:
             return self.error(500)
 
 
@@ -192,20 +196,21 @@ class CompleteTurnHandler(request.RequestHandler):
             return self.response.set_status(400, 'You should begin a turn before trying to complete one')
         # doesn't matter what turn this is, as long as it exists, and it hasn't been allocated, we can try to
         # allocate it to the game
-        current_turn = Key('Turn', turncard.turns[total_turns - 1]).get()
+        current_turn = turncard.turns[total_turns - 1].get()
+
         if current_turn.allocated_to is not None:
             return self.response.set_status(400, 'This turn has already been completed')
 
         try:
-            game = Key(urlsafe=game_key).get()
+            game = game.get()
             if game is None:
                 return self.response.set_status(400, 'This game does not exist')
 
             # game exists, so let's try to allocate this
             if game.player_one == user:
-                score_player_one(allocate_to, game, current_turn.roll_three)
+                score_player_one(allocate_to, game, current_turn)
             elif game.player_two == user:
-                score_player_two(allocate_to, game, current_turn.roll_three)
+                score_player_two(allocate_to, game, current_turn)
                 game.player_two_last_turn_date = datetime.now()
             else:
                 return self.response.set_status(400, 'The user provided is not associated with this game')
@@ -215,7 +220,7 @@ class CompleteTurnHandler(request.RequestHandler):
 
         except exceptions.AlreadyAssignedError as e:
             return self.response.set_status(400, e.message)
-        except Exception:
+        except Exception as e:
             return self.error(500)
 
 
@@ -226,7 +231,13 @@ def roll_dice(roll, dice_to_roll):
     :param dice_to_roll: the dice we are saying we want to reroll
     :return: the dice we wanted to save + the dice we rerolled
     """
-    dice_to_save = list(set(roll) - set(dice_to_roll))
+    try:
+        for die in dice_to_roll:
+            roll.remove(die)
+    except:
+        raise ValueError('Provided dice do not match previous roll')
+
+    dice_to_save = roll
     return dice_to_save + [random.randint(1, 6) for _ in xrange(0, len(dice_to_roll))]
 
 
@@ -335,7 +346,7 @@ def score_player_one(allocate_to, game, current_turn):
     elif 'chance' == allocate_to:
         if game.player_one_chance is not None:
             raise exc
-        game.player_one_chance = roll_dice(current_turn.roll_three)
+        game.player_one_chance = total_roll(current_turn.roll_three)
     else:
         return False
 
@@ -450,7 +461,7 @@ def score_player_two(allocate_to, game, current_turn):
     elif 'chance' == allocate_to:
         if game.player_two_chance is not None:
             raise exc
-        game.player_two_chance = roll_dice(current_turn.roll_three)
+        game.player_two_chance = total_roll(current_turn.roll_three)
     else:
         return False
 
