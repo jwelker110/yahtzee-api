@@ -62,7 +62,7 @@ class TestCaseGame(GameTestCase):
         }), expect_errors=True)
         self.assertIn('400', resp.status, 'Did not properly handle a random string passed for key')
 
-    def test_cancel_game(self):
+    def test_cancel_game_player_one(self):
         """
         Tests to ensure a user may forfeit a game
         """
@@ -71,3 +71,13 @@ class TestCaseGame(GameTestCase):
             "game_key": self.game.key.urlsafe()
         }))
         self.assertTrue(self.game.player_one_cancelled, 'Player One was unable to cancel the game')
+
+    def test_cancel_game_player_two(self):
+        """
+        Tests to ensure a user may forfeit a game
+        """
+        resp = self.testapp.post('/api/v1/game/cancel', params=json.dumps({
+            "jwt_token": self.jwt_token_player_two,
+            "game_key": self.game.key.urlsafe()
+        }))
+        self.assertTrue(self.game.player_two_cancelled, 'Player One was unable to cancel the game')
