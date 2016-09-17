@@ -15,13 +15,11 @@ class UserGamesHistoryHandler(request.RequestHandler):
         :param payload: the JWT payload
         :return:
         """
-        if self.request.body is not None:
-            data = json.loads(self.request.body)
-            try:
-                offset = int(data.get('offset'))
-            except:
-                offset = 0
-        else:
+        data = json.loads(self.request.body)
+
+        try:
+            offset = int(data.get('offset'))
+        except:
             offset = 0
 
         try:
@@ -56,13 +54,12 @@ class UserRollHistoryHandler(request.RequestHandler):
         """
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
-        user = payload.get('userKey')
 
         try:
             game = Key(urlsafe=game_key)
-            user_key = Key(urlsafe=user)
+            user = Key(urlsafe=payload.get('userKey'))
 
-            turncard = TurnCard.query(TurnCard.owner == user_key, TurnCard.game == game).get()
+            turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
 
             self.response.write(json.dumps([{
                                                 "roll_one": turn.roll_one,
