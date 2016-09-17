@@ -16,10 +16,11 @@
 #
 import webapp2
 
-from ep import UserHandler, ReauthHandler, \
-    CreateInviteHandler, UserRollHistoryHandler, \
-    UserAllHandler, UserRankHandler, HighScoreHandler, \
-    UserGamesHistoryHandler
+from ep import CompleteTurnHandler, NewTurnHandler, TakeTurnHandler, \
+    CreateInviteHandler, RetrieveInviteHandler, CancelInviteHandler, \
+    UserAllHandler, UserGamesHandler, UserRollHistoryHandler, UserGamesHistoryHandler, \
+    ViewGameHandler, UserRankHandler, HighScoreHandler, CancelGameHandler, ReauthHandler, \
+    UserHandler
 
 
 class PlaceholderEP(webapp2.RequestHandler):
@@ -27,17 +28,20 @@ class PlaceholderEP(webapp2.RequestHandler):
         return self.response.write('This is a test endpoint')
 
 app = webapp2.WSGIApplication([
-    ('/', PlaceholderEP),
-    ('/api/v1/user/auth', UserHandler),
-    ('/api/v1/user/reauth', ReauthHandler),
+    ('/api/v1/turn/complete', CompleteTurnHandler),
+    ('/api/v1/turn/new', NewTurnHandler),
+    ('/api/v1/turn/take', TakeTurnHandler),
+    ('/api/v1/invite/create', CreateInviteHandler),
+    ('/api/v1/invite/retrieve', RetrieveInviteHandler),
+    ('/api/v1/invite/cancel', CancelInviteHandler),
+    ('/api/v1/game/view', ViewGameHandler),
+    ('/api/v1/game/current', UserGamesHandler),
+    ('/api/v1/game/forfeit', CancelGameHandler),
+    ('/api/v1/game/rolls', UserRollHistoryHandler),
+    ('/api/v1/game/history', UserGamesHistoryHandler),
+    ('/api/v1/auth/reauth', ReauthHandler),
+    ('/api/v1/auth/user', UserHandler),
     ('/api/v1/user/all', UserAllHandler),
     ('/api/v1/user/rank', UserRankHandler),
-    ('/api/v1/user/highscores', HighScoreHandler),
-    ('/api/v1/user/game/history', UserGamesHistoryHandler),
-    ('/api/v1/game/invite', CreateInviteHandler),
-    ('/api/v1/game/history', UserRollHistoryHandler),
-    # ('/api/v1/game/create.json', PlaceholderEP),
-    # ('/api/v1/game/turn.json', PlaceholderEP),
-    # ('/api/v1/game/roll.json', PlaceholderEP),
-    # ('/api/v1/game/cancel', PlaceholderEP),
+    ('/api/v1/user/highscore', HighScoreHandler),
 ], debug=True)
