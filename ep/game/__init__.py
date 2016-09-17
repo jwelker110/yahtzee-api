@@ -2,3 +2,4 @@ from invite import CreateInviteHandler, RetrieveInviteHandler, CancelInviteHandl
 from history import UserGamesHistoryHandler, UserRollHistoryHandler
 from turn import TakeTurnHandler, NewTurnHandler, CompleteTurnHandler
 from view import ViewGameHandler
+from cancel import CancelGameHandler
