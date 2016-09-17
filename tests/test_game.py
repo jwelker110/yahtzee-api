@@ -2,7 +2,7 @@ import webapp2
 import webtest
 import json
 
-from ep import UserGamesHistoryHandler, UserRollHistoryHandler, ViewGameHandler
+from ep import ViewGameHandler
 from base import GameTestCase
 from models import User, Game, TurnCard
 from helpers import token
@@ -52,5 +52,4 @@ class TestCaseGame(GameTestCase):
             "jwt_token": self.jwt_token_player_three,
             "game_key": self.game.key.urlsafe()
         }), expect_errors=True)
-        print resp
         self.assertIn('400', resp.status, 'Did not properly handle a random string passed for key')
