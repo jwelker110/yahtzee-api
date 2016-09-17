@@ -8,10 +8,10 @@ from models import User, Game, TurnCard
 from helpers import token
 
 
-class TestCaseGame(GameTestCase):
+class TestCaseTurn(GameTestCase):
 
     def setUp(self):
-        super(TestCaseGame, self).setUp()
+        super(TestCaseTurn, self).setUp()
         self.testbed.init_datastore_v3_stub()
         self.testbed.init_memcache_stub()
         app = webapp2.WSGIApplication([
@@ -37,7 +37,7 @@ class TestCaseGame(GameTestCase):
         self.user_two_turncard.put()
 
     def tearDown(self):
-        super(TestCaseGame, self).tearDown()
+        super(TestCaseTurn, self).tearDown()
 
     def test_new_turn(self):
         """
