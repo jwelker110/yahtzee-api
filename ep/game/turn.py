@@ -3,7 +3,7 @@ import random
 import string
 
 from helpers import request, decorators, exceptions
-from models.turn import Turn
+from models import Turn, TurnCard
 from google.appengine.ext.ndb import Key
 from datetime import datetime
 
@@ -14,18 +14,17 @@ class TakeTurnHandler(request.RequestHandler):
         """
         Given game key and turn key, will locate the turn card for the user, and initiate a turn if there are < 13
         turns. If the most recent turn contains empty rolls, this will expect a dice argument indicating which dice
-        to reroll. If a dice argument is not given and the most recent turn is complete, initiates a new turn and
-        returns the dice.
+        to reroll. If a dice argument is not given, rerolls all dice
         :param payload:
         :return: game key, turncard key, turn key, and the dice (array of dice values)
         """
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
-        turncard_key = data.get('turncard_key')
         turn_key = data.get('turn_key')
         dice_to_roll = data.get('dice_to_roll')
 
         user = Key(urlsafe=payload.get('userKey'))
+        game = Key(urlsafe=game_key)
 
         if user is None:
             # not sure how the JWT slipped through but they aren't authorized to do this
@@ -34,7 +33,7 @@ class TakeTurnHandler(request.RequestHandler):
         # get the turncard first, make sure it belongs to this user, then take the turn if possible else return
         # an error
         try:
-            turncard = Key(urlsafe=turncard_key).get()
+            turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
             if turncard is None:
                 return self.error(400)
 
@@ -88,7 +87,7 @@ class TakeTurnHandler(request.RequestHandler):
 
             return self.response.write(json.dumps({
                 "game_key": game_key,
-                "turncard_key": turncard_key,
+                "turncard_key": turncard.key.urlsafe(),
                 "turn_key": turn_key,
                 "roll_results": roll_results,
                 "turn_roll_count": turn_roll_count
@@ -108,9 +107,9 @@ class NewTurnHandler(request.RequestHandler):
         """
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
-        turncard_key = data.get('turncard_key')
 
         user = Key(urlsafe=payload.get('userKey'))
+        game = Key(urlsafe=game_key)
 
         if user is None:
             # not sure how the JWT slipped through but they aren't authorized to do this
@@ -119,7 +118,7 @@ class NewTurnHandler(request.RequestHandler):
         # we have the user and turncard just verify this is their turncard, verify the latest turn is complete, and
         # then create this new turn and add it to turncard.turns array
         try:
-            turncard = Key(urlsafe=turncard_key).get()
+            turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
             if turncard is None:
                 return self.error(400)
 
@@ -152,7 +151,7 @@ class NewTurnHandler(request.RequestHandler):
 
             return self.response.write(json.dumps({
                 "game_key": game_key,
-                "turncard_key": turncard_key,
+                "turncard_key": turncard.key.urlsafe(),
                 "turn_key": new_turn.key.urlsafe,
                 "roll_results": roll_results,
                 "turn_roll_count": 1
@@ -172,16 +171,16 @@ class CompleteTurnHandler(request.RequestHandler):
         """
         data = json.loads(self.request.body)
         game_key = data.get('game_key')
-        turncard_key = data.get('turncard_key')
         allocate_to = data.get('allocate_to')
 
         user = Key(urlsafe=payload.get('userKey'))
+        game = Key(urlsafe=game_key)
 
         if user is None:
             # not sure how the JWT slipped through but they aren't authorized to do this
             return self.error(401)
 
-        turncard = Key(urlsafe=turncard_key).get()
+        turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
         if turncard is None:
             return self.error(400)
 
@@ -202,9 +201,7 @@ class CompleteTurnHandler(request.RequestHandler):
             if game is None:
                 return self.response.set_status(400, 'This game does not exist')
 
-                # game exists, so let's try to allocate this
-                # todo implement this crazy function to determine where to allocate this
-                # todo also set the game as complete if player one and player two have all their turns completed
+            # game exists, so let's try to allocate this
             if game.player_one == user:
                 score_player_one(allocate_to, game, current_turn.roll_three)
             elif game.player_two == user:
