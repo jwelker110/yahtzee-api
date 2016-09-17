@@ -1,19 +1,31 @@
 from google.appengine.ext import ndb
 
 
+class DateTimeProperty(ndb.DateTimeProperty):
+    """
+    Thank you Max http://stackoverflow.com/questions/25871308/appengine-datastore-to-dict-alternative-to-serialize-ndb-model-to-json
+    """
+    def _db_set_value(self, v, p, value):
+        super(DateTimeProperty, self)._db_set_value(v, p, value)
+
+    def _get_for_dict(self, entity):
+        val = super(DateTimeProperty, self)._get_for_dict(entity)
+        return val.isoformat()
+
+
 class Game(ndb.Model):
     player_one = ndb.KeyProperty(kind='User', required=True)
     player_one_name = ndb.StringProperty(required=True)
     player_two = ndb.KeyProperty(kind='User', required=True)
     player_two_name = ndb.StringProperty(required=True)
 
-    date_created = ndb.DateTimeProperty(auto_now_add=True)
+    date_created = DateTimeProperty(auto_now_add=True)
 
     # PLAYER ONE
     player_one_cancelled = ndb.BooleanProperty(default=False)
     player_one_completed = ndb.BooleanProperty(default=False)
 
-    player_one_last_turn_date = ndb.DateTimeProperty()
+    player_one_last_turn_date = DateTimeProperty(auto_now_add=True)
     player_one_ones = ndb.IntegerProperty(default=None)
     player_one_twos = ndb.IntegerProperty(default=None)
     player_one_threes = ndb.IntegerProperty(default=None)
@@ -22,8 +34,8 @@ class Game(ndb.Model):
     player_one_sixes = ndb.IntegerProperty(default=None)
 
     player_one_upper_sub_total = ndb.IntegerProperty(default=0)
-    player_one_bonus = ndb.ComputedProperty(lambda self: 35 if self.player_one_upper_total >= 63 else 0)
-    player_one_upper_total = ndb.ComputedProperty(lambda self: self.player_one_bonus + self.player_one_upper_total)
+    player_one_bonus = ndb.ComputedProperty(lambda self: 35 if self.player_one_upper_sub_total >= 63 else 0)
+    player_one_upper_total = ndb.ComputedProperty(lambda self: self.player_one_bonus + self.player_one_upper_sub_total)
 
     player_one_three_of_a_kind = ndb.IntegerProperty(default=None)
     player_one_four_of_a_kind = ndb.IntegerProperty(default=None)
@@ -43,7 +55,7 @@ class Game(ndb.Model):
     player_two_cancelled = ndb.BooleanProperty(default=False)
     player_two_completed = ndb.BooleanProperty(default=False)
 
-    player_two_last_turn_date = ndb.DateTimeProperty()
+    player_two_last_turn_date = DateTimeProperty(auto_now_add=True)
     player_two_ones = ndb.IntegerProperty(default=None)
     player_two_twos = ndb.IntegerProperty(default=None)
     player_two_threes = ndb.IntegerProperty(default=None)
@@ -52,8 +64,8 @@ class Game(ndb.Model):
     player_two_sixes = ndb.IntegerProperty(default=None)
 
     player_two_upper_sub_total = ndb.IntegerProperty(default=0)
-    player_two_bonus = ndb.ComputedProperty(lambda self: 35 if self.player_two_upper_total >= 63 else 0)
-    player_two_upper_total = ndb.ComputedProperty(lambda self: self.player_two_bonus + self.upper_total)
+    player_two_bonus = ndb.ComputedProperty(lambda self: 35 if self.player_two_upper_sub_total >= 63 else 0)
+    player_two_upper_total = ndb.ComputedProperty(lambda self: self.player_two_bonus + self.player_two_upper_sub_total)
 
     player_two_three_of_a_kind = ndb.IntegerProperty(default=None)
     player_two_four_of_a_kind = ndb.IntegerProperty(default=None)
@@ -91,7 +103,6 @@ class Game(ndb.Model):
             return self.player_one_name
         elif self.player_one_score_total == self.player_two_score_total:
             return '%s, %s' % (self.player_one_name, self.player_two_name)
-        else:
-            return self.player_two_name
+        return self.player_two_name
 
     winner_name = ndb.ComputedProperty(_winner_name)
