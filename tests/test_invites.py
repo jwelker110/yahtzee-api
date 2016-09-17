@@ -196,3 +196,21 @@ class TestCaseInvites(GameTestCase):
                                  content_type='application/json')
         self.assertEqual(len(json.loads(resp.body)), 1,
                          'One invite was not retrieved after creating two and cancelling one')
+
+    def test_accept_invite(self):
+        # let's create invite first
+        invite_one = Invite(
+            to_player=self.user_one.key,
+            to_player_name=self.user_one.username,
+            from_player=self.user_two.key,
+            from_player_name=self.user_two.username
+        )
+
+        invite_one.put()
+
+        resp = self.testapp.post('/api/v1/game/invite',
+                                 params=json.dumps({
+                                     "jwt_token": self.jwt_token_player_one,
+                                     "player_two_key": self.user_two.key.urlsafe()
+                                 }))
+        self.assertIn('200', str(resp))
