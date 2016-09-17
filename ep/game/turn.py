@@ -238,7 +238,12 @@ class CompleteTurnHandler(request.RequestHandler):
             else:
                 return self.response.set_status(400, 'The user provided is not associated with this game')
 
+            if total_turns == 13:
+                # game is finished!
+                complete_game(game, user)
+
             game.put()
+            current_turn.put()
             return self.response.set_status(200)
 
         except exceptions.AlreadyAssignedError as e:
@@ -246,6 +251,36 @@ class CompleteTurnHandler(request.RequestHandler):
         except Exception as e:
             print e.message
             return self.error(500)
+
+
+def complete_game(game, user):
+    """
+    Totals up the scores and marks the associated player's game as completed for that player.
+    :param game:
+    :return:
+    """
+    if game.player_one == user:
+        # finish player one's scores
+        game.player_one_completed = True
+        upper_sub = game.player_one_ones + game.player_one_twos + \
+                      game.player_one_threes + game.player_one_fours + \
+                      game.player_one_fives + game.player_one_sixes
+        game.player_one_upper_sub_total = upper_sub
+        lower_sub = game.player_one_three_of_a_kind + game.player_one_four_of_a_kind + \
+                    game.player_one_full_house + game.player_one_small_straight + \
+                    game.player_one_large_straight + game.player_one_yahtzee + game.player_one_chance
+        game.player_one_lower_total = lower_sub
+    elif game.player_two == user:
+        # finish player two's scores
+        game.player_two_completed = True
+        upper_sub = game.player_two_ones + game.player_two_twos + \
+                    game.player_two_threes + game.player_two_fours + \
+                    game.player_two_fives + game.player_two_sixes
+        game.player_two_upper_sub_total = upper_sub
+        lower_sub = game.player_two_three_of_a_kind + game.player_two_four_of_a_kind + \
+                    game.player_two_full_house + game.player_two_small_straight + \
+                    game.player_two_large_straight + game.player_two_yahtzee + game.player_two_chance
+        game.player_two_lower_total = lower_sub
 
 
 def roll_dice(roll, dice_to_roll):
