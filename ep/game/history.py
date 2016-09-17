@@ -60,17 +60,21 @@ class UserRollHistoryHandler(request.RequestHandler):
             user = Key(urlsafe=payload.get('userKey'))
 
             turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
-
-            self.response.write(json.dumps([{
-                                                "roll_one": turn.roll_one,
-                                                "roll_two": turn.roll_two,
-                                                "roll_three": turn.roll_three,
-                                                "allocated_to": turn.allocated_to,
-                                                "date_completed": turn.date_completed
-                                            } for turn in turncard.turns]))
+            turns = []
+            for turn in turncard.turns:
+                turn = turn.get()
+                turns.append({
+                    "roll_one": turn.roll_one,
+                    "roll_two": turn.roll_two,
+                    "roll_three": turn.roll_three,
+                    "allocated_to": turn.allocated_to,
+                    "date_completed": turn.date_completed.isoformat()
+                })
+            self.response.write(json.dumps(turns))
         except TypeError:
             return self.response.set_status(400, 'key was unable to be retrieved')
         except ProtocolBufferDecodeError:
             return self.response.set_status(400, 'key was unable to be retrieved')
         except Exception as e:
+            print e.message
             return self.error(500)
