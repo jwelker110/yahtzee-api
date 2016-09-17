@@ -23,7 +23,7 @@ class UserGamesHandler(request.RequestHandler):
             offset = 0
 
         try:
-            key = Key(urlsafe=payload.get('jwt_token'))
+            key = Key(urlsafe=payload.get('userKey'))
         except TypeError:
             return self.response.set_status(400, 'key was unable to be retrieved')
         except ProtocolBufferDecodeError:
