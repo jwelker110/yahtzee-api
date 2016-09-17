@@ -196,7 +196,7 @@ class TestCaseTurn(GameTestCase):
         }))
         # grab the results of the request
         resp = json.loads(resp.body)
-        print "Roll two dice: %s" % resp['roll_results']
+        # print "Roll two dice: %s" % resp['roll_results']
         # grab the turn key to send with turn request
         turn_key = resp['turn_key']
 
@@ -209,10 +209,31 @@ class TestCaseTurn(GameTestCase):
             "dice_to_roll": dice_to_roll
         }))
         resp = json.loads(resp.body)
-        print "Roll three dice: %s" % resp['roll_results']
+        # print "Roll three dice: %s" % resp['roll_results']
         resp = self.testapp.post('/api/v1/game/turn/complete', params=json.dumps({
             "jwt_token": self.jwt_token_player_one,
             "game_key": self.game.key.urlsafe(),
             "allocate_to": "chance"
         }))
+        # print self.game.player_one_chance
         self.assertIsNotNone(self.game.player_one_chance, 'The turn was not added to "chance" for player one')
+
+    def test_complete_turn_one_roll(self):
+        """
+        This will test whether I'm actually able to complete a turn if I want to keep the first roll
+        """
+        resp = self.testapp.post('/api/v1/game/turn/new', params=json.dumps({
+            "jwt_token": self.jwt_token_player_one,
+            "game_key": self.game.key.urlsafe()
+        }))
+        resp = json.loads(str(resp.body))
+        # grab the turn key to send with turn request
+        turn_key = resp['turn_key']
+
+        resp = self.testapp.post('/api/v1/game/turn/complete', params=json.dumps({
+            "jwt_token": self.jwt_token_player_one,
+            "game_key": self.game.key.urlsafe(),
+            "allocate_to": "chance"
+        }))
+        # print self.game.player_one_chance
+        self.assertEqual(1, 1, 'test')
