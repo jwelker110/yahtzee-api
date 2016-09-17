@@ -40,6 +40,9 @@ class TestCaseGame(GameTestCase):
         super(TestCaseGame, self).tearDown()
 
     def test_new_turn(self):
+        """
+        Tests the creation of a new turn
+        """
         resp = self.testapp.post('/api/v1/game/turn/new', params=json.dumps({
             "jwt_token": self.jwt_token_player_one,
             "game_key": self.game.key.urlsafe()
@@ -51,6 +54,10 @@ class TestCaseGame(GameTestCase):
         self.assertIsNotNone(resp['turn_roll_count'])
 
     def test_take_turn_two(self):
+        """
+        Tests the ability to take a second roll for a turn
+        :return:
+        """
         resp = self.testapp.post('/api/v1/game/turn/new', params=json.dumps({
             "jwt_token": self.jwt_token_player_one,
             "game_key": self.game.key.urlsafe()
@@ -76,6 +83,10 @@ class TestCaseGame(GameTestCase):
         self.assertEqual(resp['turn_roll_count'], 2, 'The turn did not count towards roll count 2')
 
     def test_take_turn_three(self):
+        """
+        Tests ability to take turn three
+        :return:
+        """
         resp = self.testapp.post('/api/v1/game/turn/new', params=json.dumps({
             "jwt_token": self.jwt_token_player_one,
             "game_key": self.game.key.urlsafe()
@@ -113,6 +124,10 @@ class TestCaseGame(GameTestCase):
         self.assertEqual(resp['turn_roll_count'], 3, 'The turn did not count towards roll count 3')
 
     def test_take_turn_four(self):
+        """
+        Tests whether users are able to continue trying to take turns when the existing
+        turn has three rolls already and needs to be completed
+        """
         # this should fail!
         resp = self.testapp.post('/api/v1/game/turn/new', params=json.dumps({
             "jwt_token": self.jwt_token_player_one,
@@ -160,6 +175,9 @@ class TestCaseGame(GameTestCase):
         self.assertIn('400', resp.status, 'Did not return 400 when attempting to take more than 3 turns')
 
     def test_complete_turn(self):
+        """
+        Tests the ability to complete a turn by assigning the results of the turn to a scorecard
+        """
         resp = self.testapp.post('/api/v1/game/turn/new', params=json.dumps({
             "jwt_token": self.jwt_token_player_one,
             "game_key": self.game.key.urlsafe()
@@ -198,5 +216,3 @@ class TestCaseGame(GameTestCase):
             "allocate_to": "chance"
         }))
         self.assertIsNotNone(self.game.player_one_chance, 'The turn was not added to "chance" for player one')
-
-    def test_new_turn_after_completing_turn(self):
