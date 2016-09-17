@@ -18,12 +18,13 @@ class CancelGameHandler(request.RequestHandler):
 
         try:
             user = Key(urlsafe=payload.get('userKey')).get()
-            game = Key(urlsafe=data.get('gameKey')).get()
+            game = Key(urlsafe=data.get('game_key')).get()
         except TypeError:
             return self.response.set_status(400, 'key was unable to be retrieved')
         except ProtocolBufferDecodeError:
             return self.response.set_status(400, 'key was unable to be retrieved')
         except Exception as e:
+            print e.message
             return self.error(500)
 
         if user is None or game is None:
@@ -44,19 +45,20 @@ class CancelGameHandler(request.RequestHandler):
             if game.player_one == user.key:
                 game.player_one_cancelled = True
                 game.player_two_completed = True
-                player_two = Key(game.player_two).get()
+                player_two = game.player_two.get()
                 player_two.wins += 1
                 game.put()
                 player_two.put()
             elif game.player_two == user.key:
                 game.player_two_cancelled = True
                 game.player_one_completed = True
-                player_one = Key(game.player_one).get()
+                player_one = game.player_one.get()
                 player_one.wins += 1
                 game.put()
                 player_one.put()
 
             return self.response.set_status(200, 'Game cancelled')
 
-        except:
+        except Exception as e:
+            print e.message
             return self.error(500)
