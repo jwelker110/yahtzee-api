@@ -49,7 +49,9 @@ class Game(ndb.Model):
 
     player_one_lower_total = ndb.IntegerProperty(default=0)
 
-    player_one_score_total = ndb.ComputedProperty(lambda self: self.player_one_upper_total + self.player_one_lower_total)
+    player_one_score_total = ndb.ComputedProperty(lambda self: self.player_one_upper_total +
+                                                               self.player_one_lower_total +
+                                                               len(self.player_one_bonus_yahtzee) * 50)
 
     # PLAYER TWO
     player_two_cancelled = ndb.BooleanProperty(default=False)
@@ -79,7 +81,9 @@ class Game(ndb.Model):
 
     player_two_lower_total = ndb.IntegerProperty(default=0)
 
-    player_two_score_total = ndb.ComputedProperty(lambda self: self.player_two_upper_total + self.player_two_lower_total)
+    player_two_score_total = ndb.ComputedProperty(lambda self: self.player_two_upper_total +
+                                                               self.player_two_lower_total +
+                                                               len(self.player_two_bonus_yahtzee) * 50)
 
     game_completed = ndb.ComputedProperty(lambda self: self.player_one_completed and self.player_two_completed)
 
