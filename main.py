@@ -23,10 +23,6 @@ from ep import CompleteTurnHandler, NewTurnHandler, TakeTurnHandler, \
     UserHandler
 
 
-class PlaceholderEP(webapp2.RequestHandler):
-    def get(self):
-        return self.response.write('This is a test endpoint')
-
 app = webapp2.WSGIApplication([
     ('/api/v1/turn/complete', CompleteTurnHandler),
     ('/api/v1/turn/new', NewTurnHandler),
@@ -44,4 +40,4 @@ app = webapp2.WSGIApplication([
     ('/api/v1/user/all', UserAllHandler),
     ('/api/v1/user/rank', UserRankHandler),
     ('/api/v1/user/highscore', HighScoreHandler),
-], debug=True)
+])
