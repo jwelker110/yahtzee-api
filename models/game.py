@@ -117,13 +117,13 @@ class Game(ndb.Model):
             player_one_name=self.player_one_name,
             player_two_name=self.player_two_name,
 
-            date_created=self.date_created,
+            date_created=self.date_created.isoformat(),
 
             # PLAYER ONE
             player_one_cancelled=self.player_one_cancelled,
             player_one_completed=self.player_one_completed,
 
-            player_one_last_turn_date=self.player_one_last_turn_date,
+            player_one_last_turn_date=self.player_one_last_turn_date.isoformat(),
             player_one_ones=self.player_one_ones,
             player_one_twos=self.player_one_twos,
             player_one_threes=self.player_one_threes,
@@ -151,7 +151,7 @@ class Game(ndb.Model):
             player_two_cancelled=self.player_two_cancelled,
             player_two_completed=self.player_two_completed,
 
-            player_two_last_turn_date=self.player_two_last_turn_date,
+            player_two_last_turn_date=self.player_two_last_turn_date.isoformat(),
             player_two_ones=self.player_two_ones,
             player_two_twos=self.player_two_twos,
             player_two_threes=self.player_two_threes,
