@@ -6,8 +6,7 @@ class ReauthForm(messages.Message):
 
 
 class UserAuthFormRequest(messages.Message):
-    jwt_token = messages.StringField(1, required=True)
-    auth_code = messages.StringField(2, required=True)
+    auth_code = messages.StringField(1, required=True)
 
 
 class UserAuthFormResponse(messages.Message):
