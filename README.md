@@ -33,7 +33,7 @@ Example request:
 {
     "jwt_token": string
 }
-Example result:
+Example response:
 {
     "jwt_token": string
 }
@@ -50,7 +50,7 @@ Example request:
 {
     "auth_code": string
 }
-Example result:
+Example response:
 {
     "jwt_token": string
 }
@@ -66,7 +66,7 @@ Example request:
     "jwt_token": string,
     "player_two_key": string
 }
-Example result (if invite accepted):
+Example response (if invite accepted):
 {
     "game_key": string,
     "game": Game JSON object
@@ -82,7 +82,7 @@ Example request:
     "jwt_token": string,
     "offset": integer or 0
 }
-Example result:
+Example response:
 {
     "invites": [{
         "inviter": string,
@@ -120,7 +120,7 @@ Example request:
     "jwt_token": string,
     "game_key": string
 }
-Example result:
+Example response:
 {
     "game_key": string,
     "turn_key": string,
@@ -141,7 +141,7 @@ Example request:
     "turn_key": string,
     "dice_to_roll": [integer]
 }
-Example result:
+Example response:
 {
     "game_key": string,
     "turn_key": string,
@@ -170,7 +170,7 @@ Example request:
     "jwt_token": string,
     "game_key": string
 }
-Example result:
+Example response:
 {
     "game_key": string,
     "game": Game JSON object
@@ -185,7 +185,7 @@ Example request:
     "jwt_token": string,
     "offset": integer or 0
 }
-Example result:
+Example response:
 {
     "games": [{
         "player_one": string,
@@ -203,7 +203,7 @@ Example request:
     "jwt_token": string,
     "game_key": string
 }
-Example result:
+Example response:
 {
     "rolls": [{
         "roll_one": [integer],
@@ -223,7 +223,7 @@ Example request:
     "jwt_token": string,
     "offset": integer or 0
 }
-Example result:
+Example response:
 {
     "games": [{
         "player_one": string,
@@ -236,7 +236,7 @@ Example result:
 `/user/rank` - GET<br><br>
 Retrieve the 10 users with the most wins, ordered from highest to lowest.
 ```
-Example result:
+Example response:
 {
     "players": [{
         "username": string,
@@ -249,7 +249,7 @@ Example result:
 Retrieve the 10 users with highest scores in a single game, ordered from 
 highest to lowest.
 ```
-Example result:
+Example response:
 {
     "players": [{
         "username": string,
@@ -265,7 +265,7 @@ Example request:
 
 offset=integer or 0
 
-Example result:
+Example response:
 {
     "players": [{
         "username": string,
