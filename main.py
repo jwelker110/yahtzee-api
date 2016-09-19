@@ -15,22 +15,33 @@
 # limitations under the License.
 #
 import webapp2
+import datetime
+
+from google.appengine.api import mail, app_identity
+from models import User
+
+
+class ReminderHandler(webapp2.RequestHandler):
+    def options(self):
+        self.response.headers.add_header('Access-Control-Allow-Origin', 'http://google.com')
+
+    def get(self):
+        """Send a reminder email to each User that has been inactive for 3 days but not more than 4
+        Called every 3 days (72 hours) using a cron job"""
+        app_id = app_identity.get_application_id()
+        users = User.query(User.last_active < datetime.datetime.utcnow() - datetime.timedelta(0),
+                           User.last_active > datetime.datetime.utcnow() - datetime.timedelta(1)).fetch()
+        for user in users:
+            print 'emailing...'
+            subject = 'Yahtzee!'
+            body = 'Hello {}, we haven\'t seen you in a while!'.format(user.username)
+            # This will send test emails, the arguments to send_mail are:
+            # from, to, subject, body
+            mail.send_mail('noreply@{}.appspotmail.com'.format(app_id),
+                           user.email,
+                           subject,
+                           body)
 
 app = webapp2.WSGIApplication([
-    # ('/api/v1/turn/complete', CompleteTurnHandler),
-    # ('/api/v1/turn/new', NewTurnHandler),
-    # ('/api/v1/turn/take', TakeTurnHandler),
-    # ('/api/v1/invite/create', CreateInviteHandler),
-    # ('/api/v1/invite/retrieve', RetrieveInviteHandler),
-    # ('/api/v1/invite/cancel', CancelInviteHandler),
-    # ('/api/v1/game/view', ViewGameHandler),
-    # ('/api/v1/game/current', UserGamesHandler),
-    # ('/api/v1/game/forfeit', CancelGameHandler),
-    # ('/api/v1/game/rolls', UserRollHistoryHandler),
-    # ('/api/v1/game/history', UserGamesHistoryHandler),
-    # ('/api/v1/auth/reauth', ReauthHandler),
-    # ('/api/v1/auth/user', UserHandler),
-    # ('/api/v1/user/all', UserAllHandler),
-    # ('/api/v1/user/rank', UserRankHandler),
-    # ('/api/v1/user/highscore', HighScoreHandler),
+    ('/tasks/reminder', ReminderHandler)
 ])
