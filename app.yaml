@@ -14,7 +14,11 @@ handlers:
 - url: /_ah/spi/.*
   script: api.app
 
-- url: /.*
+- url: /tasks/reminder
+  script: main.app
+  login: admin
+
+- url: .*
   script: main.app
 
 libraries:
