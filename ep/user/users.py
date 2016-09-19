@@ -1,31 +1,36 @@
-import json
+import endpoints
 
-from helpers import request
+from protorpc import messages, remote
+from ep.endpoint_api import yahtzee_api
+from messages import UserAllRequestForm, UserAllResponseForm, UserForm
 from models import User
 
 
-class UserAllHandler(request.RequestHandler):
-    def get(self):
+@yahtzee_api.api_class("user")
+class UserAllHandler(remote.Service):
+    @endpoints.method(endpoints.ResourceContainer(
+        offset=messages.IntegerField(1, default=0)
+    ),
+                      UserAllResponseForm,
+                      name="retrieve_users",
+                      path="user/all",
+                      http_method="GET")
+    def retrieve_users(self, request):
         """
         Return 10 users. If an offset is provided, the results will be offset by the
         provided amount
         :return:
         """
-        offset = self.request.get('offset')
-
-        if offset is None or offset == '':
-            offset = 0
-
-        try:
-            offset = int(offset)
-        except:
-            offset = 0
+        offset = request.offset
 
         try:
             users = User.query().fetch(offset=offset, limit=10)
-            return self.response.write(json.dumps([{
-                                                       "username": user.username,
-                                                       "userKey": user.key.urlsafe()
-                                                   } for user in users]))
+            return UserAllResponseForm(
+                users=[UserForm(
+                    username=user.username,
+                    user_key=user.key.urlsafe()
+                ) for user in users]
+            )
         except Exception as e:
-            return self.error(500)
+            print e.message
+            raise endpoints.InternalServerErrorException('An error occurred while retrieving users')

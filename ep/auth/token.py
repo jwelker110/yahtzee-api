@@ -1,17 +1,26 @@
 import json
-from helpers import request, token, decorators
+import endpoints
+
+from protorpc import remote, message_types
+from ep.endpoint_api import yahtzee_api
+from messages import ReauthForm
+from helpers import token
 
 
-class ReauthHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("auth")
+class ReauthHandler(remote.Service):
+    @endpoints.method(ReauthForm,
+                      ReauthForm,
+                      name="reauth",
+                      path="auth/reauth")
+    def reauth(self, request):
         """
         This will refresh the jwt by updating the expiration date. If the jwt is expired
         the user needs to hit the User ep to obtain a new token.
-        :param payload: the original payload
-        :return: refreshed JWT
         """
+        payload = token.decode_jwt(request.jwt_token)
         jwt_token = token.encode_jwt(payload=payload)
-        return self.response.write(json.dumps({
-            "jwt_token": jwt_token
-        }))
+
+        return ReauthForm(
+            jwt_token=jwt_token
+        )
