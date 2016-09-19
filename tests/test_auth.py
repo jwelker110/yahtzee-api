@@ -1,7 +1,6 @@
-import webapp2
 import webtest
 import json
-import time
+import endpoints
 
 from base import GameTestCase
 from ep import ReauthHandler
@@ -16,9 +15,9 @@ class TestCaseAuth(GameTestCase):
         super(TestCaseAuth, self).setUp()
         self.testbed.init_datastore_v3_stub()
         self.testbed.init_memcache_stub()
-        app = webapp2.WSGIApplication([
-            ('/api/v1/user/reauth', ReauthHandler)
-        ])
+        app = endpoints.api_server([
+            ReauthHandler
+        ], restricted=False)
         self.testapp = webtest.TestApp(app)
 
         user_one = User(username='Tester01', email='Tester01@email.com').put()
@@ -30,12 +29,10 @@ class TestCaseAuth(GameTestCase):
         super(TestCaseAuth, self).tearDown()
 
     def test_user_reauth(self):
-        resp = self.testapp.post('/api/v1/user/reauth',
-                                 params=json.dumps({"jwt_token": self.jwt_token_player_one}),
-                                 content_type='application/json')
+        resp = self.testapp.post_json('/_ah/spi/ReauthHandler.reauth', {"jwt_token": self.jwt_token_player_one})
         data = json.loads(resp.body)
         self.assertIn('jwt_token', data, 'JWT was not returned for player one')
 
     def test_user_no_auth(self):
-        resp = self.testapp.post('/api/v1/user/reauth', expect_errors=True)
+        resp = self.testapp.post('/_ah/spi/ReauthHandler.reauth', expect_errors=True)
         self.assertIn('400', str(resp))

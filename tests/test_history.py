@@ -2,8 +2,9 @@ import webapp2
 import webtest
 import json
 import random
+import endpoints
 
-from helpers import request, decorators, token
+from helpers import token
 from ep import UserRollHistoryHandler, UserGamesHistoryHandler, UserGamesHandler
 from models import Game, TurnCard, User, Turn
 from base import GameTestCase
@@ -15,18 +16,18 @@ class TestCaseHistory(GameTestCase):
         super(TestCaseHistory, self).setUp()
         self.testbed.init_datastore_v3_stub()
         self.testbed.init_memcache_stub()
-        app = webapp2.WSGIApplication([
-            ('/api/v1/game/history', UserRollHistoryHandler),
-            ('/api/v1/user/history', UserGamesHistoryHandler),
-            ('/api/v1/user/current', UserGamesHandler)
-        ])
+        app = endpoints.api_server([
+            UserRollHistoryHandler,
+            UserGamesHistoryHandler,
+            UserGamesHandler
+        ], restricted=False)
         self.testapp = webtest.TestApp(app)
         self.user_one = User(username='Tester01', email='Tester01@email.com')
         self.user_two = User(username='Tester02', email='Tester02@email.com')
         self.user_one.put()
         self.user_two.put()
-        self.jwt_token_player_one = token.encode_jwt({"userKey": self.user_one.key.urlsafe()})
-        self.jwt_token_player_two = token.encode_jwt({"userKey": self.user_two.key.urlsafe()})
+        self.jwt_token_player_one = token.encode_jwt({"user_key": self.user_one.key.urlsafe()})
+        self.jwt_token_player_two = token.encode_jwt({"user_key": self.user_two.key.urlsafe()})
         self.game = Game(player_one=self.user_one.key,
                          player_one_name=self.user_one.username,
                          player_two=self.user_two.key,
@@ -62,18 +63,18 @@ class TestCaseHistory(GameTestCase):
                          player_two_completed=False if _ == 4 else True)
             game.put()
 
-        resp = self.testapp.post('/api/v1/user/history', params=json.dumps({
-            "jwt_token": token.encode_jwt({"userKey": user_one.key.urlsafe()})
-        }))
+        resp = self.testapp.post_json('/_ah/spi/UserGamesHistoryHandler.games_history', {
+            "jwt_token": token.encode_jwt({"user_key": user_one.key.urlsafe()})
+        })
         resp = json.loads(resp.body)
-        self.assertEqual(len(resp), 4, '4 historical games were not retrieved')
+        self.assertEqual(len(resp['games']), 4, '4 historical games were not retrieved')
 
     def test_retrieve_game_current(self):
-        resp = self.testapp.post('/api/v1/user/current', params=json.dumps({
+        resp = self.testapp.post_json('/_ah/spi/UserGamesHandler.retrieve_games', {
             "jwt_token": self.jwt_token_player_one
-        }))
+        })
         resp = json.loads(resp.body)
-        self.assertEqual(len(resp), 1, 'Did not return 1 current game')
+        self.assertEqual(len(resp['games']), 1, 'Did not return 1 current game')
 
     def test_retrieve_game_moves(self):
         users = []
@@ -112,9 +113,9 @@ class TestCaseHistory(GameTestCase):
             user_one_turncard.turns.append(turn.key)
         user_one_turncard.put()
 
-        resp = self.testapp.post('/api/v1/game/history', params=json.dumps({
-            "jwt_token": token.encode_jwt({"userKey": user_one.key.urlsafe()}),
+        resp = self.testapp.post_json('/_ah/spi/UserRollHistoryHandler.roll_history', {
+            "jwt_token": token.encode_jwt({"user_key": user_one.key.urlsafe()}),
             "game_key": game.key.urlsafe()
-        }))
+        })
         resp = json.loads(resp.body)
-        self.assertEqual(len(resp), 15, '15 historical turns were not retrieved')
+        self.assertEqual(len(resp['rolls']), 15, '15 historical turns were not retrieved')
