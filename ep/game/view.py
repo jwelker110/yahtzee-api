@@ -13,7 +13,7 @@ class ViewGameHandler(remote.Service):
     @endpoints.method(ViewGameRequestForm,
                       ViewGameResponseForm,
                       name='view_game',
-                      path='view')
+                      path='game/view')
     def retrieve_game(self, request):
         """
         JWT required. Retrieves the game matching the provided key, and returns the game details

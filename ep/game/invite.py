@@ -2,7 +2,7 @@ import json
 import endpoints
 
 from messages import CreateInviteRequestForm, CreateInviteResponseForm, CancelInviteRequestForm, \
-    RetrieveInviteRequestForm, RetrieveInviteResponseForm, Invite
+    RetrieveInviteRequestForm, RetrieveInviteResponseForm, InviteForm
 from protorpc import remote, message_types
 from ep.endpoint_api import yahtzee
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
@@ -120,7 +120,7 @@ class CreateInviteHandler(remote.Service):
                 to_player_name=player_two.username
             )
             invite.put()
-            return message_types.VoidMessage
+            return CreateInviteResponseForm()
         except:
             raise endpoints.InternalServerErrorException('An error occurred while attempting to create an invite')
 
@@ -152,7 +152,7 @@ class RetrieveInviteHandler(remote.Service):
                                Invite.rejected == False,
                                Invite.accepted == False).fetch(limit=10, offset=offset)
         return RetrieveInviteResponseForm(
-            invites=[Invite(
+            invites=[InviteForm(
                 inviter=invite.from_player.urlsafe(),
                 inviter_name=invite.from_player_name
             ) for invite in invites]
@@ -200,6 +200,6 @@ class CancelInviteHandler(remote.Service):
         try:
             invite.rejected = True
             invite.put()
-            return message_types.VoidMessage
+            return message_types.VoidMessage()
         except:
             raise endpoints.InternalServerErrorException('An error occurred while attempting to cancel the invite')

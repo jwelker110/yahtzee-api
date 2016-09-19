@@ -62,7 +62,7 @@ class CancelGameHandler(remote.Service):
                 game.put()
                 player_one.put()
 
-            return message_types.VoidMessage
+            return message_types.VoidMessage()
 
         except Exception as e:
             # print e.message

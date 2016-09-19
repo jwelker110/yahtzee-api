@@ -38,64 +38,64 @@ class TakeTurnHandler(remote.Service):
         except ProtocolBufferDecodeError:
             raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
+            # print e.message
             raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
         # get the turncard first, make sure it belongs to this user, then take the turn if possible else return
         # an error
-        try:
-            turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
-            if turncard is None:
-                raise endpoints.BadRequestException('No turns associated with this game and user')
+        turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
+        if turncard is None:
+            raise endpoints.BadRequestException('No turns associated with this game and user')
 
-            if turncard.owner != user:
-                raise endpoints.UnauthorizedException('User is not associated with this game')
+        if turncard.owner != user:
+            raise endpoints.UnauthorizedException('User is not associated with this game')
 
-            total_turns = len(turncard.turns)
-            if total_turns == 0:
-                raise endpoints.BadRequestException('You need to start a new turn before you can roll')
+        total_turns = len(turncard.turns)
+        if total_turns == 0:
+            raise endpoints.BadRequestException('You need to start a new turn before you can roll')
 
-            # the user owns this card, and there are still turns left. Let's take one
-            current_turn = turncard.turns[total_turns - 1].get()
+        # the user owns this card, and there are still turns left. Let's take one
+        current_turn = turncard.turns[total_turns - 1].get()
 
-            if total_turns == 13:
-                # check if the move has been allocated already
-                if current_turn.allocated_to is not None:
-                    raise endpoints.BadRequestException('The game is already over')
-
-                # check to make sure last turn is complete
-                if len(current_turn.roll_three) != 0:
-                    raise endpoints.BadRequestException('You need to complete this turn to finish the game')
-
-            # check if the current turn is completed, if it is, return error
+        if total_turns == 13:
+            # check if the move has been allocated already
             if current_turn.allocated_to is not None:
-                raise endpoints.BadRequestException('This turn has already been completed')
+                raise endpoints.BadRequestException('The game is already over')
 
-            # the turn hasn't been completed, so, make sure the dice to roll are in the previous roll, and then
-            # roll the dice and assign them to the current roll
-            roll_results = []
-            turn_roll_count = 2
-
+            # check to make sure last turn is complete
             if len(current_turn.roll_three) != 0:
-                # turn needs to be completed
-                raise endpoints.BadRequestException("You need to complete this turn")
-            elif len(current_turn.roll_two) == 0:
-                try:
-                    roll_results = roll_dice(current_turn.roll_one, dice_to_roll)
-                    current_turn.roll_two = roll_results
-                except ValueError:
-                    raise endpoints.BadRequestException('Dice do not match previous roll')
-                except:
-                    raise endpoints.InternalServerErrorException('Error occurred while rolling')
-            else:
-                try:
-                    roll_results = roll_dice(current_turn.roll_two, dice_to_roll)
-                    current_turn.roll_three = roll_results
-                    turn_roll_count = 3
-                except ValueError:
-                    raise endpoints.BadRequestException('Dice do not match previous roll')
-                except:
-                    raise endpoints.InternalServerErrorException('Error occurred while rolling')
+                raise endpoints.BadRequestException('You need to complete this turn to finish the game')
 
+        # check if the current turn is completed, if it is, return error
+        if current_turn.allocated_to is not None:
+            raise endpoints.BadRequestException('This turn has already been completed')
+
+        # the turn hasn't been completed, so, make sure the dice to roll are in the previous roll, and then
+        # roll the dice and assign them to the current roll
+        roll_results = []
+        turn_roll_count = 2
+
+        if len(current_turn.roll_three) != 0:
+            # turn needs to be completed
+            raise endpoints.BadRequestException("You need to complete this turn")
+        elif len(current_turn.roll_two) == 0:
+            try:
+                roll_results = roll_dice(current_turn.roll_one, dice_to_roll)
+                current_turn.roll_two = roll_results
+            except ValueError:
+                raise endpoints.BadRequestException('Dice do not match previous roll')
+            except:
+                raise endpoints.InternalServerErrorException('Error occurred while rolling')
+        else:
+            try:
+                roll_results = roll_dice(current_turn.roll_two, dice_to_roll)
+                current_turn.roll_three = roll_results
+                turn_roll_count = 3
+            except ValueError:
+                raise endpoints.BadRequestException('Dice do not match previous roll')
+            except:
+                raise endpoints.InternalServerErrorException('Error occurred while rolling')
+        try:
             turncard.turns[total_turns - 1] = current_turn.key
             turncard.put()
 
@@ -107,6 +107,7 @@ class TakeTurnHandler(remote.Service):
             )
 
         except Exception as e:
+            # print e.message
             raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
 
@@ -131,6 +132,7 @@ class NewTurnHandler(remote.Service):
         except ProtocolBufferDecodeError:
             raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
+            # print e.message
             raise endpoints.InternalServerErrorException('An error occurred when attempting to create the turn')
 
         # we have the user and turncard just verify this is their turncard, verify the latest turn is complete, and
@@ -176,6 +178,7 @@ class NewTurnHandler(remote.Service):
                 turn_roll_count=1
             )
         except Exception as e:
+            # print e.message
             raise endpoints.InternalServerErrorException('An error occurred when attempting to create the turn')
 
 
@@ -224,7 +227,7 @@ class CompleteTurnHandler(remote.Service):
         try:
             game = game.get()
             if game is None:
-                raise endpoints.BadRequestException(400, 'This game does not exist')
+                raise endpoints.BadRequestException('This game does not exist')
 
             # game exists, so let's try to allocate this
             if game.player_one == user:
@@ -241,7 +244,7 @@ class CompleteTurnHandler(remote.Service):
 
             game.put()
             current_turn.put()
-            return message_types.VoidMessage
+            return message_types.VoidMessage()
 
         except exceptions.AlreadyAssignedError as e:
             raise endpoints.BadRequestException(e.message)

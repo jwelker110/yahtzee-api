@@ -30,7 +30,7 @@ class UserGamesHistoryHandler(remote.Service):
         except ProtocolBufferDecodeError:
             raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to retrieve user\'s games')
 
         try:
             games = Game.query(
@@ -45,7 +45,7 @@ class UserGamesHistoryHandler(remote.Service):
                     game_key=game.key.urlsafe()
                 ) for game in games]
             )
-        except:
+        except Exception as e:
             raise endpoints.InternalServerErrorException('An error occurred while retrieving completed games')
 
 
@@ -65,30 +65,34 @@ class UserRollHistoryHandler(remote.Service):
         try:
             game = Key(urlsafe=game_key)
             user = Key(urlsafe=payload.get('user_key'))
-
-            turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
-            turns = []
-            for turn in turncard.turns:
-                turn = turn.get()
-                turns.append({
-                    "roll_one": turn.roll_one,
-                    "roll_two": turn.roll_two,
-                    "roll_three": turn.roll_three,
-                    "allocated_to": turn.allocated_to,
-                    "date_completed": turn.date_completed.isoformat()
-                })
-            return UserRollHistoryResponseForm(
-                rolls=[UserRollHistory(
-                    roll_one=turn.roll_one,
-                    roll_two=turn.roll_two,
-                    roll_three=turn.roll_three,
-                    allocated_to=turn.allocated_to,
-                    date_completed=turn.date_completed.isoformat()
-                ) for turn in turns]
-            )
         except TypeError:
             raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
             raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
+            raise endpoints.InternalServerErrorException('An error occurred when retrieving roll history')
+
+        turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
+        if turncard is None:
+            raise endpoints.BadRequestException('There are no turns associated with that turncard')
+        turns = []
+        for turn in turncard.turns:
+            turn = turn.get()
+            turns.append({
+                "roll_one": turn.roll_one,
+                "roll_two": turn.roll_two,
+                "roll_three": turn.roll_three,
+                "allocated_to": turn.allocated_to,
+                "date_completed": turn.date_completed.isoformat()
+            })
+
+        return UserRollHistoryResponseForm(
+            rolls=[UserRollHistory(
+                roll_one=turn['roll_one'],
+                roll_two=turn['roll_two'],
+                roll_three=turn['roll_three'],
+                allocated_to=turn['allocated_to'],
+                date_completed=turn['date_completed']
+            ) for turn in turns]
+        )
+
