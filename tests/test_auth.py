@@ -22,8 +22,8 @@ class TestCaseAuth(GameTestCase):
 
         user_one = User(username='Tester01', email='Tester01@email.com').put()
         user_two = User(username='Tester02', email='Tester02@email.com').put()
-        self.jwt_token_player_one = token.encode_jwt({"userKey": user_one.urlsafe()})
-        self.jwt_token_player_two = token.encode_jwt({"userKey": user_two.urlsafe()})
+        self.jwt_token_player_one = token.encode_jwt({"user_key": user_one.urlsafe()})
+        self.jwt_token_player_two = token.encode_jwt({"user_key": user_two.urlsafe()})
 
     def tearDown(self):
         super(TestCaseAuth, self).tearDown()
