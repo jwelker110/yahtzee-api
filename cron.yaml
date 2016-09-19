@@ -1,4 +1,4 @@
 cron:
-- description: Send a reminder email to users inactive for a three days
+- description: Send a reminder email to users inactive for three days
   url: /crons/send_reminder
   schedule: every 72 hours
