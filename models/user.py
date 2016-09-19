@@ -6,3 +6,4 @@ class User(ndb.Model):
     email = ndb.StringProperty(required=True)
 
     wins = ndb.IntegerProperty(default=0)
+    last_active = ndb.DateTimeProperty(auto_now_add=True)
