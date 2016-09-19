@@ -2,14 +2,14 @@ import json
 import endpoints
 
 from protorpc import remote, message_types
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 from messages import CancelGameRequestForm
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
 from helpers import token
 from google.appengine.ext.ndb import Key
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class CancelGameHandler(remote.Service):
     @endpoints.method(CancelGameRequestForm,
                       message_types.VoidMessage,

@@ -1,12 +1,12 @@
 import endpoints
 
 from protorpc import remote, message_types
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 from messages import UserRankResponseForm, UserHighScoreResponseForm, UserRank, UserHighScore
 from models import User, Game
 
 
-@yahtzee_api.api_class("user")
+@yahtzee.api_class("user")
 class UserRankHandler(remote.Service):
     @endpoints.method(message_types.VoidMessage,
                       UserRankResponseForm,
@@ -30,7 +30,7 @@ class UserRankHandler(remote.Service):
             raise endpoints.InternalServerErrorException('An error occurred retrieving user ranks')
 
 
-@yahtzee_api.api_class("user")
+@yahtzee.api_class("user")
 class HighScoreHandler(remote.Service):
     @endpoints.method(message_types.VoidMessage,
                       UserHighScoreResponseForm,

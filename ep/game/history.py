@@ -1,7 +1,7 @@
 import endpoints
 
 from protorpc import remote
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 from messages import UserGamesHistoryRequestForm, UserGamesHistoryResponseForm, GamesHistory, \
     UserRollHistoryRequestForm, UserRollHistoryResponseForm, UserRollHistory
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
@@ -10,7 +10,7 @@ from models import Game, TurnCard
 from google.appengine.ext.ndb import Key, OR, AND
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class UserGamesHistoryHandler(remote.Service):
     @endpoints.method(UserGamesHistoryRequestForm,
                       UserGamesHistoryResponseForm,
@@ -18,7 +18,7 @@ class UserGamesHistoryHandler(remote.Service):
                       path="game/history")
     def games_history(self, request):
         """
-        Requires JWT. Retrieves user's completed games starting from the provided offset, or 0. Limit 10
+        JWT required. Retrieves user's completed games starting from the provided offset, or 0. Limit 10
         """
         offset = request.offset
         payload = token.decode_jwt(request.jwt_token)
@@ -49,7 +49,7 @@ class UserGamesHistoryHandler(remote.Service):
             raise endpoints.InternalServerErrorException('An error occurred while retrieving completed games')
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class UserRollHistoryHandler(remote.Service):
     @endpoints.method(UserRollHistoryRequestForm,
                       UserRollHistoryResponseForm,

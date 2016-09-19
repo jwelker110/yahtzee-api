@@ -5,10 +5,10 @@ from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
 from google.appengine.ext.ndb import Key
 from messages import ViewGameRequestForm, ViewGameResponseForm
 from helpers import token
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class ViewGameHandler(remote.Service):
     @endpoints.method(ViewGameRequestForm,
                       ViewGameResponseForm,
@@ -16,7 +16,7 @@ class ViewGameHandler(remote.Service):
                       path='view')
     def retrieve_game(self, request):
         """
-        Retrieves the game matching the provided key, and returns the game details
+        JWT required. Retrieves the game matching the provided key, and returns the game details
         """
         game_key = request.game_key
         payload = token.decode_jwt(request.jwt_token)

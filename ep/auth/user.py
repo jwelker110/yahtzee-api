@@ -3,7 +3,7 @@ import os
 import endpoints
 
 from protorpc import remote
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 from messages import UserAuthFormRequest, UserAuthFormResponse
 from google.appengine.ext.ndb import Key
 from apiclient import discovery
@@ -12,7 +12,7 @@ from models import User
 from helpers import token
 
 
-@yahtzee_api.api_class("auth")
+@yahtzee.api_class("auth")
 class UserHandler(remote.Service):
     @endpoints.method(UserAuthFormRequest,
                       UserAuthFormResponse,

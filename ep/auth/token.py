@@ -1,12 +1,12 @@
 import endpoints
 
 from protorpc import remote
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 from messages import ReauthForm
 from helpers import token
 
 
-@yahtzee_api.api_class("auth")
+@yahtzee.api_class("auth")
 class ReauthHandler(remote.Service):
     @endpoints.method(ReauthForm,
                       ReauthForm,
@@ -14,8 +14,8 @@ class ReauthHandler(remote.Service):
                       path="auth/reauth")
     def reauth(self, request):
         """
-        This will refresh the jwt by updating the expiration date. If the jwt is expired
-        the user needs to hit the User ep to obtain a new token by logging in with their 
+        JWT required. This will refresh the jwt by updating the expiration date. If the jwt is expired
+        the user needs to hit the User ep to obtain a new token by logging in with their
         Google account
         """
         payload = token.decode_jwt(request.jwt_token)

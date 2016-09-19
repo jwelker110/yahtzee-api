@@ -10,10 +10,10 @@ from datetime import datetime
 from messages import TakeTurnRequestForm, TakeTurnResponseForm, NewTurnRequestForm, \
     NewTurnResponseForm, CompleteTurnRequestForm
 from protorpc import remote, message_types
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class TakeTurnHandler(remote.Service):
     @endpoints.method(TakeTurnRequestForm,
                       TakeTurnResponseForm,
@@ -110,7 +110,7 @@ class TakeTurnHandler(remote.Service):
             raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class NewTurnHandler(remote.Service):
     @endpoints.method(NewTurnRequestForm,
                       NewTurnResponseForm,
@@ -179,7 +179,7 @@ class NewTurnHandler(remote.Service):
             raise endpoints.InternalServerErrorException('An error occurred when attempting to create the turn')
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class CompleteTurnHandler(remote.Service):
     @endpoints.method(CompleteTurnRequestForm,
                       message_types.VoidMessage,

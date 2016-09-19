@@ -4,14 +4,14 @@ import endpoints
 from messages import CreateInviteRequestForm, CreateInviteResponseForm, CancelInviteRequestForm, \
     RetrieveInviteRequestForm, RetrieveInviteResponseForm, Invite
 from protorpc import remote, message_types
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
 from helpers import token
 from models import Game, Invite, TurnCard
 from google.appengine.ext.ndb import Key
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class CreateInviteHandler(remote.Service):
     @endpoints.method(CreateInviteRequestForm,
                       CreateInviteResponseForm,
@@ -125,7 +125,7 @@ class CreateInviteHandler(remote.Service):
             raise endpoints.InternalServerErrorException('An error occurred while attempting to create an invite')
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class RetrieveInviteHandler(remote.Service):
     @endpoints.method(RetrieveInviteRequestForm,
                       RetrieveInviteResponseForm,
@@ -159,7 +159,7 @@ class RetrieveInviteHandler(remote.Service):
         )
 
 
-@yahtzee_api.api_class("game")
+@yahtzee.api_class("game")
 class CancelInviteHandler(remote.Service):
     @endpoints.method(CancelInviteRequestForm,
                       message_types.VoidMessage,

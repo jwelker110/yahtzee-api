@@ -1,7 +1,7 @@
 import endpoints
 
 from protorpc import remote, message_types
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 from messages import UserGamesRequestForm, UserGamesResponseForm, UserGames
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
 from helpers import token
@@ -9,7 +9,7 @@ from models import Game
 from google.appengine.ext.ndb import Key, OR, AND
 
 
-@yahtzee_api.api_class("user")
+@yahtzee.api_class("user")
 class UserGamesHandler(remote.Service):
     @endpoints.method(UserGamesRequestForm,
                       UserGamesResponseForm,

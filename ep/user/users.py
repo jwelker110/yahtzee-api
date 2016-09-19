@@ -1,12 +1,12 @@
 import endpoints
 
 from protorpc import messages, remote
-from ep.endpoint_api import yahtzee_api
+from ep.endpoint_api import yahtzee
 from messages import UserAllRequestForm, UserAllResponseForm, UserForm
 from models import User
 
 
-@yahtzee_api.api_class("user")
+@yahtzee.api_class("user")
 class UserAllHandler(remote.Service):
     @endpoints.method(endpoints.ResourceContainer(
         offset=messages.IntegerField(1, default=0)
