@@ -356,7 +356,7 @@ show not completed until both players have completed all their turns.
 ### Setting up the project
 
 1. [Install](https://cloud.google.com/appengine/docs/python/download) Google App Engine SDK
-2. [Clone](https://github.com/jwelker110/neighborhood-map.git) this repo.
+2. [Clone](https://github.com/jwelker110/yahtzee-api.git) this repo.
 3. [Install](https://pip.pypa.io/en/stable/installing/) Pip if you don't already have it.
 4. Create a folder in the project named `lib`
 5. `pip install -t lib --upgrade google-api-python-client WebTest PyJWT`
