@@ -1,4 +1,5 @@
 from google.appengine.ext import ndb
+from messages.game import Game as GameForm
 
 
 class DateTimeProperty(ndb.DateTimeProperty):
@@ -110,3 +111,71 @@ class Game(ndb.Model):
         return self.player_two_name
 
     winner_name = ndb.ComputedProperty(_winner_name)
+
+    def to_form(self):
+        return GameForm(
+            player_one_name=self.player_one_name,
+            player_two_name=self.player_two_name,
+
+            date_created=self.date_created,
+
+            # PLAYER ONE
+            player_one_cancelled=self.player_one_cancelled,
+            player_one_completed=self.player_one_completed,
+
+            player_one_last_turn_date=self.player_one_last_turn_date,
+            player_one_ones=self.player_one_ones,
+            player_one_twos=self.player_one_twos,
+            player_one_threes=self.player_one_threes,
+            player_one_fours=self.player_one_fours,
+            player_one_fives=self.player_one_fives,
+            player_one_sixes=self.player_one_sixes,
+
+            player_one_upper_sub_total=self.player_one_upper_sub_total,
+            player_one_bonus=self.player_one_bonus,
+            player_one_upper_total=self.player_one_upper_total,
+
+            player_one_three_of_a_kind=self.player_one_three_of_a_kind,
+            player_one_four_of_a_kind=self.player_one_four_of_a_kind,
+            player_one_full_house=self.player_one_full_house,
+            player_one_small_straight=self.player_one_small_straight,
+            player_one_large_straight=self.player_one_large_straight,
+            player_one_yahtzee=self.player_one_yahtzee,
+            player_one_chance=self.player_one_chance,
+
+            player_one_bonus_yahtzee=self.player_one_bonus_yahtzee,
+            player_one_lower_total=self.player_one_lower_total,
+            player_one_score_total=self.player_one_score_total,
+
+            # PLAYER TWO
+            player_two_cancelled=self.player_two_cancelled,
+            player_two_completed=self.player_two_completed,
+
+            player_two_last_turn_date=self.player_two_last_turn_date,
+            player_two_ones=self.player_two_ones,
+            player_two_twos=self.player_two_twos,
+            player_two_threes=self.player_two_threes,
+            player_two_fours=self.player_two_fours,
+            player_two_fives=self.player_two_fives,
+            player_two_sixes=self.player_two_sixes,
+
+            player_two_upper_sub_total=self.player_two_upper_sub_total,
+            player_two_bonus=self.player_two_bonus,
+            player_two_upper_total=self.player_two_upper_total,
+
+            player_two_three_of_a_kind=self.player_two_three_of_a_kind,
+            player_two_four_of_a_kind=self.player_two_four_of_a_kind,
+            player_two_full_house=self.player_two_full_house,
+            player_two_small_straight=self.player_two_small_straight,
+            player_two_large_straight=self.player_two_large_straight,
+            player_two_yahtzee=self.player_two_yahtzee,
+            player_two_chance=self.player_two_chance,
+
+            player_two_bonus_yahtzee=self.player_two_bonus_yahtzee,
+            player_two_lower_total=self.player_two_lower_total,
+            player_two_score_total=self.player_two_score_total,
+
+            game_completed=self.game_completed,
+            winner_score=self.winner_score,
+            winner_name=self.winner_name
+        )
