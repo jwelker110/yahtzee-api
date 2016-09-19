@@ -14,7 +14,7 @@ class UserGamesHandler(remote.Service):
     @endpoints.method(UserGamesRequestForm,
                       UserGamesResponseForm,
                       name="retrieve_current_games",
-                      path="game/current")
+                      path="user/current")
     def retrieve_games(self, request):
         """
         JWT required. Retrieves user's in-progress games starting from the provided offset, or 0. Limit 10
