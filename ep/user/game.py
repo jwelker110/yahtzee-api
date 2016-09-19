@@ -17,9 +17,7 @@ class UserGamesHandler(remote.Service):
                       path="game/current")
     def retrieve_game(self, request):
         """
-        Retrieves user's in-progress games starting from the provided offset, or 0. Limit 10
-        :param request: the JWT payload
-        :return:
+        JWT required. Retrieves user's in-progress games starting from the provided offset, or 0. Limit 10
         """
         offset = request.offset
         payload = token.decode_jwt(request.jwt_token)

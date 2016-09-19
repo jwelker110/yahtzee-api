@@ -18,9 +18,7 @@ class UserGamesHistoryHandler(remote.Service):
                       path="game/history")
     def games_history(self, request):
         """
-        Retrieves user's completed games starting from the provided offset, or 0. Limit 10
-        :param request: the JWT payload
-        :return:
+        Requires JWT. Retrieves user's completed games starting from the provided offset, or 0. Limit 10
         """
         offset = request.offset
         payload = token.decode_jwt(request.jwt_token)
@@ -59,8 +57,7 @@ class UserRollHistoryHandler(remote.Service):
                       path="game/rolls")
     def roll_history(self, request):
         """
-        Retrieves user's roll history for the provided game
-        :return:
+        JWT required. Retrieves user's roll history for the provided game
         """
         game_key = request.game_key
         payload = token.decode_jwt(request.jwt_token)

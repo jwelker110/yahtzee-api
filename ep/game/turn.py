@@ -21,11 +21,9 @@ class TakeTurnHandler(remote.Service):
                       path='turn/take')
     def take_turn(self, request):
         """
-        Given game key and turn key, will locate the turn card for the user, and initiate a turn if there are < 13
+        JWT required. Given game key and turn key, will locate the turn card for the user, and initiate a turn if there are < 13
         turns. If the most recent turn contains empty rolls, this will expect a dice argument indicating which dice
         to reroll. If a dice argument is not given, rerolls all dice.
-        :param request:
-        :return: game key, turncard key, turn key, and the dice (array of dice values)
         """
         turn_key = request.turn_key
         dice_to_roll = request.dice_to_roll
@@ -120,9 +118,7 @@ class NewTurnHandler(remote.Service):
                       path="turn/new")
     def new_turn(self, request):
         """
-        Creates a new turn and rolls the dice for the first time.
-        :param request:
-        :return:
+        JWT required. Creates a new turn and rolls the dice for the first time.
         """
         game_key = request.game_key
         payload = token.decode_jwt(request.jwt_token)
@@ -191,10 +187,8 @@ class CompleteTurnHandler(remote.Service):
                       path="turn/complete")
     def complete_turn(self, request):
         """
-        This will complete the provided turn. Expects to get the string representation of the
+        JWT required. This will complete the provided turn. Expects to get the string representation of the
         cell to score e.g. "twos, sm_straight, full_house, etc..."
-        :param request:
-        :return:
         """
         game_key = request.game_key
         allocate_to = request.allocate_to
@@ -259,8 +253,7 @@ class CompleteTurnHandler(remote.Service):
 def complete_game(game, user):
     """
     Totals up the scores and marks the associated player's game as completed for that player.
-    :param game:
-    :return:
+    :param game: the game to score
     """
     if game.player_one == user:
         # finish player one's scores

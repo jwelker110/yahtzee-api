@@ -16,7 +16,6 @@ class UserRankHandler(remote.Service):
     def user_rank(self, request):
         """
         Retrieve the 10 users with the most wins, ordered from highest to lowest
-        :return:
         """
         try:
             users = User.query().order(-User.wins).fetch(limit=10)
@@ -41,7 +40,6 @@ class HighScoreHandler(remote.Service):
     def user_score(self, request):
         """
         Retrieve the 10 users with highest scores in a single game, ordered from highest to lowest
-        :return:
         """
         try:
             games = Game.query(Game.player_one_completed == True,

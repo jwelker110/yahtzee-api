@@ -19,10 +19,11 @@ class CreateInviteHandler(remote.Service):
                       path="invite/create")
     def create_invite(self, request):
         """
-        So take the provided user's id and go ahead and start a game with their id and then
-        the tentative player two's id as well. Verify JWT and that the user doesn't already
-        have a game with player two before creating it.
-        :return:
+        JWT required. Provided the user does not have an active game with the provided player two, creates
+        an invite for player two. If player two has already invited the user to play a game, accepts the
+        invite and creates a game for them.
+
+        If a game is created, the user will be able to retrieve it from game endpoint and begin playing.
         """
         player_two_key = request.player_two_key
         payload = token.decode_jwt(request.jwt_token)
@@ -132,9 +133,7 @@ class RetrieveInviteHandler(remote.Service):
                       path="invite/retrieve")
     def retrieve_invite(self, request):
         """
-        Retrieve the next 10 invites associated with the user, offset by offset amount
-        :param request:
-        :return:
+        JWT required. Retrieve the next 10 invites associated with the user starting from the provided offset, or 0
         """
         offset = request.offset
         payload = token.decode_jwt(request.jwt_token)
@@ -168,9 +167,7 @@ class CancelInviteHandler(remote.Service):
                       path="invite/cancel")
     def cancel_invite(self, request):
         """
-        Cancel the invite associated with the provided player keys
-        :param request:
-        :return:
+        JWT required. Cancel the invite associated with the user
         """
         target_user = request.target_user
         payload = token.decode_jwt(request.jwt_token)

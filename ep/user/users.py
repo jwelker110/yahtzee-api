@@ -17,9 +17,7 @@ class UserAllHandler(remote.Service):
                       http_method="GET")
     def retrieve_users(self, request):
         """
-        Return 10 users. If an offset is provided, the results will be offset by the
-        provided amount
-        :return:
+        Return 10 users starting from the provided offset, or 0
         """
         offset = request.offset
 

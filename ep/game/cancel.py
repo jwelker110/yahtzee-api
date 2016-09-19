@@ -17,9 +17,7 @@ class CancelGameHandler(remote.Service):
                       path="game/forfeit")
     def cancel_game(self, request):
         """
-        This will cancel the game associated with the provided game key
-        :param payload: JWT payload containing the userKey
-        :return: 200 if successful, otherwise a response code other than 2-- with a message
+        JWT required. This will cancel the game associated with the provided game key.
         """
         game_key = request.game_key
         payload = token.decode_jwt(request.jwt_token)
