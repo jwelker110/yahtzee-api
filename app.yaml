@@ -11,17 +11,18 @@ env_variables:
   JWT_SECRET: "The secret, secret key"
 
 handlers:
-- url: /favicon\.ico
-  static_files: favicon.ico
-  upload: favicon\.ico
+- url: /_ah/spi/.*
+  script: api.app
 
-- url: .*
+- url: /.*
   script: main.app
 
 libraries:
 - name: webapp2
   version: "2.5.2"
 - name: pycrypto
-  version: "latest"
+  version: latest
 - name: ssl
-  version: "latest"
+  version: latest
+- name: endpoints
+  version: latest
