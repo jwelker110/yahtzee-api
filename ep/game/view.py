@@ -1,39 +1,44 @@
-import json
+import endpoints
 
+from protorpc import remote
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
-
-from helpers import request, decorators
 from google.appengine.ext.ndb import Key
+from messages import ViewGameRequestForm, ViewGameResponseForm
+from helpers import token
+from ep.endpoint_api import yahtzee_api
 
 
-class ViewGameHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("game")
+class ViewGameHandler(remote.Service):
+    @endpoints.method(ViewGameRequestForm,
+                      ViewGameResponseForm,
+                      name='view_game',
+                      path='view')
+    def retrieve_game(self, request):
         """
         Retrieves the game matching the provided key, and returns the game details
         """
-        data = json.loads(self.request.body)
-        game_key = data.get('game_key')
+        game_key = request.game_key
+        payload = token.decode_jwt(request.jwt_token)
 
         try:
-            user = Key(urlsafe=payload.get('userKey'))
+            user = Key(urlsafe=payload.get('user_key'))
             game = Key(urlsafe=game_key).get()
         except TypeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            return self.error(500)
+            raise endpoints.InternalServerErrorException('An error occrurred while retrieving game details')
 
         if game is None:
-            return self.response.set_status(400, 'That game does not exist')
+            raise endpoints.BadRequestException('That game does not exist')
 
         # k the game exists let's make sure it's the user's game
         if game.player_one != user and game.player_two != user:
-            return self.response.set_status(401, 'You are not authorized to view other players games')
+            raise endpoints.UnauthorizedException('You are not authorized to view other players games')
 
-        return self.response.write(json.dumps({
-            "game_key": game_key,
-            "game": game.to_dict(exclude=['player_one',
-                                          'player_two'])
-        }))
+        return ViewGameResponseForm(
+            game_key=game_key,
+            game=game.to_form()
+        )

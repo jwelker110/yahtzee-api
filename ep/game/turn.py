@@ -1,57 +1,60 @@
-import json
 import random
 import string
+import endpoints
 
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
-
-from helpers import request, decorators, exceptions
+from helpers import token, exceptions
 from models import Turn, TurnCard
 from google.appengine.ext.ndb import Key
 from datetime import datetime
+from messages import TakeTurnRequestForm, TakeTurnResponseForm, NewTurnRequestForm, \
+    NewTurnResponseForm, CompleteTurnRequestForm
+from protorpc import remote, message_types
+from ep.endpoint_api import yahtzee_api
 
 
-class TakeTurnHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("game")
+class TakeTurnHandler(remote.Service):
+    @endpoints.method(TakeTurnRequestForm,
+                      TakeTurnResponseForm,
+                      name='take_turn',
+                      path='turn/take')
+    def take_turn(self, request):
         """
         Given game key and turn key, will locate the turn card for the user, and initiate a turn if there are < 13
         turns. If the most recent turn contains empty rolls, this will expect a dice argument indicating which dice
-        to reroll. If a dice argument is not given, rerolls all dice
-        :param payload:
+        to reroll. If a dice argument is not given, rerolls all dice.
+        :param request:
         :return: game key, turncard key, turn key, and the dice (array of dice values)
         """
-        data = json.loads(self.request.body)
-        game_key = data.get('game_key')
-        turn_key = data.get('turn_key')
-        dice_to_roll = data.get('dice_to_roll')
+        turn_key = request.turn_key
+        dice_to_roll = request.dice_to_roll
+        payload = token.decode_jwt(request.jwt_token)
+        game_key = request.game_key
 
         try:
-            user = Key(urlsafe=payload.get('userKey'))
+            user = Key(urlsafe=payload.get('user_key'))
             game = Key(urlsafe=game_key)
         except TypeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            return self.error(500)
-
-        if user is None:
-            # not sure how the JWT slipped through but they aren't authorized to do this
-            return self.error(401)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
         # get the turncard first, make sure it belongs to this user, then take the turn if possible else return
         # an error
         try:
             turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
             if turncard is None:
-                return self.error(400)
+                raise endpoints.BadRequestException('No turns associated with this game and user')
 
             if turncard.owner != user:
-                return self.error(401)
+                raise endpoints.UnauthorizedException('User is not associated with this game')
 
             total_turns = len(turncard.turns)
             if total_turns == 0:
-                return self.response.set_status(400, 'You need to start a new turn before you can roll')
+                raise endpoints.BadRequestException('You need to start a new turn before you can roll')
 
             # the user owns this card, and there are still turns left. Let's take one
             current_turn = turncard.turns[total_turns - 1].get()
@@ -59,15 +62,15 @@ class TakeTurnHandler(request.RequestHandler):
             if total_turns == 13:
                 # check if the move has been allocated already
                 if current_turn.allocated_to is not None:
-                    return self.response.set_status(400, 'The game is already over')
+                    raise endpoints.BadRequestException('The game is already over')
 
                 # check to make sure last turn is complete
                 if len(current_turn.roll_three) != 0:
-                    return self.response.set_status(400, 'You need to complete this turn to finish the game')
+                    raise endpoints.BadRequestException('You need to complete this turn to finish the game')
 
             # check if the current turn is completed, if it is, return error
             if current_turn.allocated_to is not None:
-                return self.response.set_status(400, 'This turn has already been completed')
+                raise endpoints.BadRequestException('This turn has already been completed')
 
             # the turn hasn't been completed, so, make sure the dice to roll are in the previous roll, and then
             # roll the dice and assign them to the current roll
@@ -76,73 +79,73 @@ class TakeTurnHandler(request.RequestHandler):
 
             if len(current_turn.roll_three) != 0:
                 # turn needs to be completed
-                return self.response.set_status(400, "You need to complete this turn")
+                raise endpoints.BadRequestException("You need to complete this turn")
             elif len(current_turn.roll_two) == 0:
                 try:
                     roll_results = roll_dice(current_turn.roll_one, dice_to_roll)
                     current_turn.roll_two = roll_results
                 except ValueError:
-                    return self.response.set_status(400, 'Dice do not match previous roll')
+                    raise endpoints.BadRequestException('Dice do not match previous roll')
                 except:
-                    return self.response.set_status(500, 'Error occurred while rolling')
+                    raise endpoints.InternalServerErrorException('Error occurred while rolling')
             else:
                 try:
                     roll_results = roll_dice(current_turn.roll_two, dice_to_roll)
                     current_turn.roll_three = roll_results
                     turn_roll_count = 3
                 except ValueError:
-                    return self.response.set_status(400, 'Dice do not match previous roll')
+                    raise endpoints.BadRequestException('Dice do not match previous roll')
                 except:
-                    return self.response.set_status(500, 'Error occurred while rolling')
+                    raise endpoints.InternalServerErrorException('Error occurred while rolling')
 
             turncard.turns[total_turns - 1] = current_turn.key
             turncard.put()
 
-            return self.response.write(json.dumps({
-                "game_key": game_key,
-                "turn_key": turn_key,
-                "roll_results": roll_results,
-                "turn_roll_count": turn_roll_count
-            }))
+            return TakeTurnResponseForm(
+                game_key=game_key,
+                turn_key=turn_key,
+                roll_results=roll_results,
+                turn_roll_count=turn_roll_count
+            )
 
         except Exception as e:
-            return self.error(500)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
 
-class NewTurnHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("game")
+class NewTurnHandler(remote.Service):
+    @endpoints.method(NewTurnRequestForm,
+                      NewTurnResponseForm,
+                      name="new_turn",
+                      path="turn/new")
+    def new_turn(self, request):
         """
-        Takes the initial roll and adds the turn to the turncard.turns array
-        :param payload:
+        Creates a new turn and rolls the dice for the first time.
+        :param request:
         :return:
         """
-        data = json.loads(self.request.body)
-        game_key = data.get('game_key')
+        game_key = request.game_key
+        payload = token.decode_jwt(request.jwt_token)
 
         try:
-            user = Key(urlsafe=payload.get('userKey'))
+            user = Key(urlsafe=payload.get('user_key'))
             game = Key(urlsafe=game_key)
         except TypeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            return self.error(500)
-
-        if user is None:
-            # not sure how the JWT slipped through but they aren't authorized to do this
-            return self.error(401)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to create the turn')
 
         # we have the user and turncard just verify this is their turncard, verify the latest turn is complete, and
         # then create this new turn and add it to turncard.turns array
         try:
             turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
             if turncard is None:
-                return self.error(400)
+                raise endpoints.BadRequestException('No turns associated with this game and user')
 
             if turncard.owner != user:
-                return self.error(401)
+                raise endpoints.UnauthorizedException('User is not associated with this game')
 
             total_turns = len(turncard.turns)
 
@@ -151,14 +154,14 @@ class NewTurnHandler(request.RequestHandler):
                 if total_turns == 13:
                     # check if the move has been allocated already
                     if current_turn.allocated_to is not None:
-                        return self.response.set_status(400, 'The game is already over')
+                        raise endpoints.BadRequestException('The game is already over')
 
                     # check to make sure last turn is complete
                     if len(current_turn.roll_three) != 0:
-                        return self.response.set_status(400, 'You need to complete this turn to finish the game')
+                        raise endpoints.BadRequestException('You need to complete this turn to finish the game')
 
                 if current_turn.allocated_to is None:
-                    return self.response.set_status(400, 'You need to finish this turn before starting a new one')
+                    raise endpoints.BadRequestException('You need to finish this turn before starting a new one')
 
             roll_results = roll_dice([0, 0, 0, 0, 0], [0, 0, 0, 0, 0])
             new_turn = Turn(
@@ -170,64 +173,64 @@ class NewTurnHandler(request.RequestHandler):
             turncard.turns += [new_turn.key]
             turncard.put()
 
-            return self.response.write(json.dumps({
-                "game_key": game_key,
-                "turn_key": new_turn.key.urlsafe(),
-                "roll_results": roll_results,
-                "turn_roll_count": 1
-            }))
+            return NewTurnResponseForm(
+                game_key=game_key,
+                turn_key=new_turn.key.urlsafe(),
+                roll_results=roll_results,
+                turn_roll_count=1
+            )
         except Exception as e:
-            return self.error(500)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to create the turn')
 
 
-class CompleteTurnHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("game")
+class CompleteTurnHandler(remote.Service):
+    @endpoints.method(CompleteTurnRequestForm,
+                      message_types.VoidMessage,
+                      name="complete_turn",
+                      path="turn/complete")
+    def complete_turn(self, request):
         """
         This will complete the provided turn. Expects to get the string representation of the
         cell to score e.g. "twos, sm_straight, full_house, etc..."
-        :param payload:
+        :param request:
         :return:
         """
-        data = json.loads(self.request.body)
-        game_key = data.get('game_key')
-        allocate_to = data.get('allocate_to')
+        game_key = request.game_key
+        allocate_to = request.allocate_to
+        payload = token.decode_jwt(request.jwt_token)
 
         try:
-            user = Key(urlsafe=payload.get('userKey'))
+            user = Key(urlsafe=payload.get('user_key'))
             game = Key(urlsafe=game_key)
         except TypeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            return self.error(500)
-
-        if user is None:
-            # not sure how the JWT slipped through but they aren't authorized to do this
-            return self.error(401)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to complete the turn')
 
         turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
         if turncard is None:
-            return self.error(400)
+            raise endpoints.BadRequestException('Turn does not exist for the provided game')
 
         if turncard.owner != user:
-            return self.error(401)
+            raise endpoints.UnauthorizedException('User is not associated with the provided game')
 
         total_turns = len(turncard.turns)
         if total_turns < 1:
-            return self.response.set_status(400, 'You should begin a turn before trying to complete one')
+            raise endpoints.BadRequestException('You should begin a turn before trying to complete one')
         # doesn't matter what turn this is, as long as it exists, and it hasn't been allocated, we can try to
         # allocate it to the game
         current_turn = turncard.turns[total_turns - 1].get()
 
         if current_turn.allocated_to is not None:
-            return self.response.set_status(400, 'This turn has already been completed')
+            raise endpoints.BadRequestException('This turn has already been completed')
 
         try:
             game = game.get()
             if game is None:
-                return self.response.set_status(400, 'This game does not exist')
+                raise endpoints.BadRequestException(400, 'This game does not exist')
 
             # game exists, so let's try to allocate this
             if game.player_one == user:
@@ -236,7 +239,7 @@ class CompleteTurnHandler(request.RequestHandler):
                 score_player_two(allocate_to, game, current_turn)
                 game.player_two_last_turn_date = datetime.now()
             else:
-                return self.response.set_status(400, 'The user provided is not associated with this game')
+                raise endpoints.BadRequestException('The user provided is not associated with this game')
 
             if total_turns == 13:
                 # game is finished!
@@ -244,13 +247,13 @@ class CompleteTurnHandler(request.RequestHandler):
 
             game.put()
             current_turn.put()
-            return self.response.set_status(200)
+            return message_types.VoidMessage
 
         except exceptions.AlreadyAssignedError as e:
-            return self.response.set_status(400, e.message)
+            raise endpoints.BadRequestException(e.message)
         except Exception as e:
-            print e.message
-            return self.error(500)
+            # print e.message
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to complete the turn')
 
 
 def complete_game(game, user):

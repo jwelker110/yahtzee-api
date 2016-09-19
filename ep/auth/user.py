@@ -83,7 +83,7 @@ class UserHandler(request.RequestHandler):
         # create the JWT and send it back to the user. This should
         # be used on all subsequent requests!
         payload = {
-            "userKey": user.key.urlsafe()
+            "user_key": user.key.urlsafe()
         }
 
         try:

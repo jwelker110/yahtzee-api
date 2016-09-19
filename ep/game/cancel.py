@@ -1,45 +1,52 @@
 import json
+import endpoints
 
+from protorpc import remote, message_types
+from ep.endpoint_api import yahtzee_api
+from messages import CancelGameRequestForm
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
-
-from helpers import decorators, request
+from helpers import token
 from google.appengine.ext.ndb import Key
 
 
-class CancelGameHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("game")
+class CancelGameHandler(remote.Service):
+    @endpoints.method(CancelGameRequestForm,
+                      message_types.VoidMessage,
+                      name="cancel_game",
+                      path="game/forfeit")
+    def cancel_game(self, request):
         """
         This will cancel the game associated with the provided game key
         :param payload: JWT payload containing the userKey
         :return: 200 if successful, otherwise a response code other than 2-- with a message
         """
-        data = json.loads(self.request.body)
+        game_key = request.game_key
+        payload = token.decode_jwt(request.jwt_token)
 
         try:
-            user = Key(urlsafe=payload.get('userKey')).get()
-            game = Key(urlsafe=data.get('game_key')).get()
+            user = Key(urlsafe=payload.get('user_key')).get()
+            game = Key(urlsafe=game_key).get()
         except TypeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            print e.message
-            return self.error(500)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
         if user is None or game is None:
-            return self.error(400)
+            raise endpoints.BadRequestException('Could not locate the user and game specified')
 
         try:
             if game.player_one != user.key and game.player_two != user.key:
                 # this isn't even the user's game!
-                return self.response.set_status(401, 'Can not cancel someone else\'s game')
+                raise endpoints.UnauthorizedException('Can not cancel someone else\'s game')
 
             if game.player_one_completed is True and game.player_two_completed is True:
-                return self.response.set_status(400, 'Can not cancel a game that has already been completed')
+                raise endpoints.BadRequestException('Can not cancel a game that has already been completed')
 
             if game.player_one_cancelled is True or game.player_two_cancelled is True:
-                return self.response.set_status(400, 'Game has been cancelled already')
+                raise endpoints.BadRequestException('Game has been cancelled already')
 
             # game has not been completed / cancelled already
             if game.player_one == user.key:
@@ -57,8 +64,8 @@ class CancelGameHandler(request.RequestHandler):
                 game.put()
                 player_one.put()
 
-            return self.response.set_status(200, 'Game cancelled')
+            return message_types.VoidMessage
 
         except Exception as e:
-            print e.message
-            return self.error(500)
+            # print e.message
+            raise endpoints.InternalServerErrorException('An error occurred while trying to cancel the game')

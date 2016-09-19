@@ -1,51 +1,45 @@
 import json
+import endpoints
 
+from messages import CreateInviteRequestForm, CreateInviteResponseForm, CancelInviteRequestForm, \
+    RetrieveInviteRequestForm, RetrieveInviteResponseForm, Invite
+from protorpc import remote, message_types
+from ep.endpoint_api import yahtzee_api
 from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
-
-from helpers import request, decorators
+from helpers import token
 from models import Game, Invite, TurnCard
 from google.appengine.ext.ndb import Key
 
 
-class CreateInviteHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("game")
+class CreateInviteHandler(remote.Service):
+    @endpoints.method(CreateInviteRequestForm,
+                      CreateInviteResponseForm,
+                      name="create_invite",
+                      path="invite/create")
+    def create_invite(self, request):
         """
         So take the provided user's id and go ahead and start a game with their id and then
         the tentative player two's id as well. Verify JWT and that the user doesn't already
         have a game with player two before creating it.
         :return:
         """
-        self.response.headers.add('Access-Control-Allow-Origin', '*')
-        self.response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-        self.response.headers['Content-Type'] = 'application/json'
-
-        if self.request.body is None or self.request.body is '':
-            return self.error(400)
-
-        data = json.loads(self.request.body)
-        player_two_key = data.get('player_two_key')
-
-        if player_two_key is None or player_two_key is '':
-            return self.response.set_status(400, '\'player_two_key\' argument was not included in the request')
+        player_two_key = request.player_two_key
+        payload = token.decode_jwt(request.jwt_token)
 
         try:
-            user = Key(urlsafe=payload.get('userKey')).get()
+            user = Key(urlsafe=payload.get('user_key')).get()
             # grab player two please
             player_two = Key(urlsafe=player_two_key).get()
         except TypeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            return self.error(500)
-
-        if user is None:
-            # not sure how the JWT slipped through but they aren't authorized to do this
-            return self.error(401)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
         if player_two is None:
-            return self.error(400)
+            raise endpoints.BadRequestException('Player does not exist')
 
         # awesome we have player one and two
         game = Game.query(
@@ -64,7 +58,7 @@ class CreateInviteHandler(request.RequestHandler):
         if game is not None:
             # not entirely certain what to set here, as the request wasn't necessarily wrong, but the
             # user already has a game with player_two
-            return self.response.set_status(400, "An existing game must be finished before starting another one")
+            raise endpoints.BadRequestException("An existing game must be finished before starting another one")
 
         # let's check for an existing invite between these players
         invite = Invite.query(
@@ -75,7 +69,8 @@ class CreateInviteHandler(request.RequestHandler):
         ).get()
 
         if invite is not None:
-            return self.response.set_status(400, "A pending invite must be accepted or declined before creating another one")
+            raise endpoints.BadRequestException(
+                "A pending invite must be accepted or declined before creating another one")
 
         invite = Invite.query(
             Invite.from_player == player_two.key,
@@ -106,15 +101,14 @@ class CreateInviteHandler(request.RequestHandler):
                 player_one_turncard.put()
                 player_two_turncard.put()
 
-                return self.response.write(json.dumps({
-                    "game_key": game.key.urlsafe(),
-                    "game": game.to_dict(exclude=['player_one',
-                                                  'player_two'])
-                }))
+                return CreateInviteResponseForm(
+                    game_key=game.key.urlsafe(),
+                    game=game.to_form()
+                )
 
             except Exception as e:
-                print e.message
-                return self.response.set_status(500, 'An error occurred while attempting to create a game')
+                # print e.message
+                raise endpoints.InternalServerErrorException('An error occurred while attempting to create a game')
 
         # alright there are no invites between these players yet so let's make one
         try:
@@ -125,72 +119,73 @@ class CreateInviteHandler(request.RequestHandler):
                 to_player_name=player_two.username
             )
             invite.put()
-            return self.response.set_status(200)
+            return message_types.VoidMessage
         except:
-            return self.response.set_status(500, 'An error occurred while attempting to create an invite')
+            raise endpoints.InternalServerErrorException('An error occurred while attempting to create an invite')
 
 
-class RetrieveInviteHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("game")
+class RetrieveInviteHandler(remote.Service):
+    @endpoints.method(RetrieveInviteRequestForm,
+                      RetrieveInviteResponseForm,
+                      name="retrieve_invite",
+                      path="invite/retrieve")
+    def retrieve_invite(self, request):
         """
         Retrieve the next 10 invites associated with the user, offset by offset amount
-        :param payload:
+        :param request:
         :return:
         """
-        offset = 0
-        data = json.loads(self.request.body)
+        offset = request.offset
+        payload = token.decode_jwt(request.jwt_token)
 
         try:
-            offset = int(data.get('offset'))
-        except:
-            pass
-
-        try:
-            user = Key(urlsafe=payload.get('userKey'))
+            user = Key(urlsafe=payload.get('user_key'))
         except TypeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            return self.error(500)
-
-        if user is None:
-            return self.error(401)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
         # user is here let's get their invites
         invites = Invite.query(Invite.to_player == user,
                                Invite.rejected == False,
                                Invite.accepted == False).fetch(limit=10, offset=offset)
+        return RetrieveInviteResponseForm(
+            invites=[Invite(
+                inviter=invite.from_player.urlsafe(),
+                inviter_name=invite.from_player_name
+            ) for invite in invites]
+        )
 
-        return self.response.write(json.dumps([{
-                                                  "inviter": invite.from_player.urlsafe(),
-                                                  "inviter_name": invite.from_player_name
-                                              } for invite in invites]))
 
-
-class CancelInviteHandler(request.RequestHandler):
-    @decorators.jwt_required
-    def post(self, payload):
+@yahtzee_api.api_class("game")
+class CancelInviteHandler(remote.Service):
+    @endpoints.method(CancelInviteRequestForm,
+                      message_types.VoidMessage,
+                      name="cancel_invite",
+                      path="invite/cancel")
+    def cancel_invite(self, request):
         """
         Cancel the invite associated with the provided player keys
-        :param payload:
+        :param request:
         :return:
         """
-        data = json.loads(self.request.body)
-        target_user = data.get('target_user')
+        target_user = request.target_user
+        payload = token.decode_jwt(request.jwt_token)
 
         try:
-            user = Key(urlsafe=payload.get('userKey'))
+            user = Key(urlsafe=payload.get('user_key'))
         except TypeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except ProtocolBufferDecodeError:
-            return self.response.set_status(400, 'key was unable to be retrieved')
+            raise endpoints.BadRequestException('key was unable to be retrieved')
         except Exception as e:
-            return self.error(500)
+            raise endpoints.InternalServerErrorException('An error occurred when attempting to take the turn')
 
         if target_user is None or target_user is '':
-            return self.response.set_status(400, 'The target user was not provided')
+            raise endpoints.BadRequestException('The target user was not provided')
 
         invite = Invite.query(Invite.from_player == user,
                                Invite.rejected == False,
@@ -202,12 +197,12 @@ class CancelInviteHandler(request.RequestHandler):
                                   Invite.accepted == False).get()
 
         if invite is None:
-            return self.response.set_status(400, 'No pending invites exist for these users')
+            raise endpoints.BadRequestException('No pending invites exist for these users')
 
         # let's cancel the invite
         try:
             invite.rejected = True
             invite.put()
-            return self.error(200)
+            return message_types.VoidMessage
         except:
-            return self.error(500)
+            raise endpoints.InternalServerErrorException('An error occurred while attempting to cancel the invite')
