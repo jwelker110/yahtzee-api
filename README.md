@@ -44,7 +44,7 @@ Verifies the identity of the user via Oauth using the auth code retrieved from a
 user already exists, we return a JWT with their claim. If they don't already exist, we create their
 user in the datastore and return a JWT with their claim.<br><br>
 **login_example.html** already implements the frontend flow to retrieve the user's
-auth code and send to the server. The result is the JWT required for future requests.
+auth code and send to the server. The returned value is the JWT required for future requests.
 ```
 Example request:
 {
