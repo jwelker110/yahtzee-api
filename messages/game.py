@@ -17,12 +17,8 @@ class GamesHistory(messages.Message):
     game_key = messages.StringField(3)
 
 
-class UserGamesHistory(messages.Message):
-    games = messages.MessageField(GamesHistory, 1, repeated=True)
-
-
 class UserGamesHistoryResponseForm(messages.Message):
-    games = messages.MessageField(UserGamesHistory, 1, repeated=True)
+    games = messages.MessageField(GamesHistory, 1, repeated=True)
 
 
 class UserRollHistoryRequestForm(messages.Message):
@@ -79,7 +75,7 @@ class Game(messages.Message):
     player_one_yahtzee = messages.IntegerField(23)
     player_one_chance = messages.IntegerField(24)
 
-    player_one_bonus_yahtzee = messages.IntegerField(25)
+    player_one_bonus_yahtzee = messages.IntegerField(25, repeated=True)
     player_one_lower_total = messages.IntegerField(26)
     player_one_score_total = messages.IntegerField(27)
 
@@ -107,13 +103,13 @@ class Game(messages.Message):
     player_two_yahtzee = messages.IntegerField(46)
     player_two_chance = messages.IntegerField(47)
 
-    player_two_bonus_yahtzee = messages.IntegerField(48)
+    player_two_bonus_yahtzee = messages.IntegerField(48, repeated=True)
     player_two_lower_total = messages.IntegerField(49)
     player_two_score_total = messages.IntegerField(50)
 
     game_completed = messages.BooleanField(51)
     winner_score = messages.IntegerField(52)
-    winner_name = messages.IntegerField(53)
+    winner_name = messages.StringField(53)
 
 
 class CreateInviteResponseForm(messages.Message):
@@ -126,13 +122,13 @@ class RetrieveInviteRequestForm(messages.Message):
     offset = messages.IntegerField(2, default=0)
 
 
-class Invite(messages.Message):
+class InviteForm(messages.Message):
     inviter = messages.StringField(1)
     inviter_name = messages.StringField(2)
 
 
 class RetrieveInviteResponseForm(messages.Message):
-    invites = messages.MessageField(Invite, 1, repeated=True)
+    invites = messages.MessageField(InviteForm, 1, repeated=True)
 
 
 class CancelInviteRequestForm(messages.Message):
@@ -162,7 +158,7 @@ class NewTurnRequestForm(messages.Message):
 class NewTurnResponseForm(messages.Message):
     game_key = messages.StringField(1)
     turn_key = messages.StringField(2)
-    roll_results = messages.IntegerField(3)
+    roll_results = messages.IntegerField(3, repeated=True)
     turn_roll_count = messages.IntegerField(4)
 
 
