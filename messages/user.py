@@ -38,10 +38,10 @@ class UserAllRequestForm(messages.Message):
     offset = messages.IntegerField(1, default=0)
 
 
-class User(messages.Message):
+class UserForm(messages.Message):
     username = messages.StringField(1)
     user_key = messages.StringField(2)
 
 
 class UserAllResponseForm(messages.Message):
-    users = messages.MessageField(User, 1, repeated=True)
+    users = messages.MessageField(UserForm, 1, repeated=True)
