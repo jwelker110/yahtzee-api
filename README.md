@@ -16,12 +16,14 @@ like to score, in addition to the extra 100 points!
 - [Google App Engine](https://cloud.google.com/appengine/docs/python/)
 - [PyJWT](https://pypi.python.org/pypi/PyJWT/1.4.2)
 - [WebTest](https://webtest.readthedocs.io/en/latest/)
+
 ## Endpoints
 - Prepend all endpoints with `/_ah/api/yahtzee/v1`
 - **DateTime** values 
 have been converted to [ISO 8601](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)
 dates.
 ##
+
 #### Reauthorize JWT 
 `/auth/reauth` - POST<br><br>
 Should be called when the user navigates to the frontend. This will refresh the JWT by 
