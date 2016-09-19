@@ -11,5 +11,6 @@ app = endpoints.api_server([
     ViewGameHandler, TakeTurnHandler, NewTurnHandler, CompleteTurnHandler,
     CreateInviteHandler, RetrieveInviteHandler, CancelInviteHandler,
     UserGamesHistoryHandler, UserRollHistoryHandler, CancelGameHandler,
-    UserGamesHandler
+    UserGamesHandler, UserRankHandler, HighScoreHandler, UserAllHandler,
+    UserHandler, ReauthHandler
 ])
