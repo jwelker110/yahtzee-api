@@ -1,0 +1,17 @@
+My models do not utilize the inheritance available when using Datastore. I felt that storing as much data relevant to each entity within the entity itself would provide the easiest way to access the information.
+
+To successfully implement a cron job that wouldn't annoy users (I hope), I added a last_active date to the User entities. This enables the cron job to leave users alone that have been inactive for more than 4 days, or less than 3. Users are considered "active" when they have refreshed their JWT within the last 3 days. This ensures that users that don't plan on coming back to the site are not plagued with unecessary emails that would consume my quota, which isn't so much an issue for this project as much as it may be for future projects.
+
+The hardest part was the initial acceptance of the way data is stored. I initially had in mind a game that would notify users when their opponents had taken their turn, and would rely on the activity of the users. With eventually consistent datastores, this is not feasible and may result in unecessary requests to attempt to sync the players together. This was the biggest challenge initially.
+
+Another challenge was the documentation. Navigating the documentation, I felt as though I was reading in circles, with pages leading back to each other. At one point
+
+I'm still not entirely sure, but somehow I had installed a library that interfered with one of the libraries I was trying to use, which caused some serious headache when attempting to troubleshoot the initial setup of my first endpoint. I hadn't cloned the Guess A Number project to start off, and it puzzled me that the project was able to run and function but my project was not. This disrupted the overall flow of the project and was very discouraging.
+
+I implemented JSON Web Tokens (JWT) as a part of the authentication process for my API. When a user initially signs up, it takes a few seconds to complete the retrieval of their information. Implementing JWT allowed me to simply reauthorize the user's token when they perform a request to the endpoint within the expiration time. I feel this is an excellent tradeoff that will prevent users from having to wait each time they want to access the API.
+
+I think it's difficult to answer the question of what I added to my models, as the models have been created pretty much from the ground up and contain plenty of properties that wouldn't make sense to have on another game (such as "small straight") like Battleship or Hangman.
+
+In retrospect, I think that I may have been able to implement taking turns as a single endpoint that would automatically determine whether the turn was ending or not, however I wanted to keep the endpoints as lightweight as possible, and I feel that there are a few that are probably a little longer than I would have originally thought.
+
+Thank you
