@@ -137,30 +137,29 @@ class NewTurnHandler(remote.Service):
 
         # we have the user and turncard just verify this is their turncard, verify the latest turn is complete, and
         # then create this new turn and add it to turncard.turns array
+        turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
+        if turncard is None:
+            raise endpoints.BadRequestException('No turns associated with this game and user')
+
+        if turncard.owner != user:
+            raise endpoints.UnauthorizedException('User is not associated with this game')
+
+        total_turns = len(turncard.turns)
+
+        if total_turns != 0:
+            current_turn = turncard.turns[total_turns - 1].get()
+            if total_turns == 13:
+                # check if the move has been allocated already
+                if current_turn.allocated_to is not None:
+                    raise endpoints.BadRequestException('The game is already over')
+
+                # check to make sure last turn is complete
+                if len(current_turn.roll_three) != 0:
+                    raise endpoints.BadRequestException('You need to complete this turn to finish the game')
+
+            if current_turn.allocated_to is None:
+                raise endpoints.BadRequestException('You need to finish this turn before starting a new one')
         try:
-            turncard = TurnCard.query(TurnCard.owner == user, TurnCard.game == game).get()
-            if turncard is None:
-                raise endpoints.BadRequestException('No turns associated with this game and user')
-
-            if turncard.owner != user:
-                raise endpoints.UnauthorizedException('User is not associated with this game')
-
-            total_turns = len(turncard.turns)
-
-            if total_turns != 0:
-                current_turn = turncard.turns[total_turns - 1].get()
-                if total_turns == 13:
-                    # check if the move has been allocated already
-                    if current_turn.allocated_to is not None:
-                        raise endpoints.BadRequestException('The game is already over')
-
-                    # check to make sure last turn is complete
-                    if len(current_turn.roll_three) != 0:
-                        raise endpoints.BadRequestException('You need to complete this turn to finish the game')
-
-                if current_turn.allocated_to is None:
-                    raise endpoints.BadRequestException('You need to finish this turn before starting a new one')
-
             roll_results = roll_dice([0, 0, 0, 0, 0], [0, 0, 0, 0, 0])
             new_turn = Turn(
                 roll_one=roll_results,
