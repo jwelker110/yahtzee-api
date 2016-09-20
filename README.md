@@ -360,5 +360,11 @@ show not completed until both players have completed all their turns.
 3. [Install](https://pip.pypa.io/en/stable/installing/) Pip if you don't already have it.
 4. Create a folder in the project named `lib`
 5. `pip install -t lib --upgrade google-api-python-client WebTest PyJWT`
+    - There are known issues when installing packages on Mac OS with 
+    Homebrew pip. These packages may require [manual installation](https://www.udacity.com/wiki/ud036/manually-installing-a-python-package),
+    or a **[workaround](http://stackoverflow.com/questions/24257803/distutilsoptionerror-must-supply-either-home-or-prefix-exec-prefix-not-both)** can be used.
+    - [google-api-python-client](https://developers.google.com/api-client-library/python/start/installation)
+    - [WebTest](https://pypi.python.org/pypi/WebTest#downloads)
+    - [PyJWT](https://pypi.python.org/pypi/PyJWT/1.4.2#downloads)
 6. Check to ensure everything is installed correctly by running the provided tests `python runner.py`
 7. Have fun!
